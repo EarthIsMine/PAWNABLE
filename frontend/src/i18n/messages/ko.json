@@ -1,0 +1,198 @@
+{
+  "common": {
+    "connect": "지갑 연결",
+    "connected": "연결됨",
+    "disconnect": "연결 해제",
+    "loading": "로딩 중...",
+    "error": "오류",
+    "success": "성공",
+    "cancel": "취소",
+    "confirm": "확인",
+    "close": "닫기",
+    "save": "저장",
+    "edit": "수정",
+    "delete": "삭제",
+    "view": "보기"
+  },
+  "navbar": {
+    "marketplace": "마켓플레이스",
+    "dashboard": "대시보드",
+    "createLoan": "대출 생성"
+  },
+  "home": {
+    "badge": "P2P 암호화폐 대출",
+    "title": "중개자 없는 금융",
+    "subtitle": "최고의 DeFi를 직접 경험하세요. 직접 금리를 설정하고, 암호화폐를 담보로 사용하며, P2P로 대출하세요.",
+    "exploreMarketplace": "마켓플레이스 탐색",
+    "createLoanRequest": "대출 요청 생성",
+    "stats": {
+      "platformFee": "플랫폼 수수료",
+      "directMatching": "직접 매칭",
+      "flexible": "유연한",
+      "yourRates": "나의 금리",
+      "secure": "안전한",
+      "smartContracts": "스마트 계약"
+    },
+    "howItWorks": {
+      "title": "PAWNABLE 작동 방식",
+      "subtitle": "완전한 투명성과 통제력을 갖춘 혁신적인 암호화폐 담보 대출 방식",
+      "features": {
+        "setTerms": {
+          "title": "조건 설정",
+          "description": "차입자가 직접 이자율과 대출 조건을 제안합니다. 알고리즘 금리가 아닙니다."
+        },
+        "collateral": {
+          "title": "암호화폐 담보",
+          "description": "ETH, SOL 또는 NFT를 담보로 사용하세요. 자산은 온체인에서 안전하게 보관됩니다."
+        },
+        "deadlines": {
+          "title": "고정 마감일",
+          "description": "명확한 상환 마감일. 가격 기반 청산이 아닌 시간 기반 조건만 적용됩니다."
+        },
+        "matching": {
+          "title": "빠른 매칭",
+          "description": "마켓플레이스에서 대출자와 직접 연결. 빠르고 투명한 P2P 방식."
+        }
+      }
+    },
+    "cta": {
+      "title": "시작할 준비가 되셨나요?",
+      "subtitle": "지갑을 연결하고 마켓플레이스를 탐색하여 오늘부터 대출 또는 차입을 시작하세요.",
+      "viewMarketplace": "마켓플레이스 보기"
+    },
+    "footer": {
+      "testnet": "2024 PAWNABLE. 테스트넷 전용 - 교육 목적.",
+      "docs": "문서",
+      "github": "GitHub",
+      "discord": "Discord"
+    }
+  },
+  "marketplace": {
+    "title": "대출 마켓플레이스",
+    "subtitle": "사용 가능한 대출 요청을 탐색하고 이자를 받으며 대출하세요",
+    "noLoans": {
+      "title": "이용 가능한 대출이 없습니다",
+      "description": "첫 번째로 대출 요청을 생성하세요",
+      "button": "대출 요청 생성"
+    },
+    "card": {
+      "interest": "이자율",
+      "totalRepayment": "총 상환액",
+      "due": "만기",
+      "collateral": "담보",
+      "lendNow": "지금 대출하기",
+      "connectToLend": "대출하려면 지갑 연결"
+    },
+    "toast": {
+      "connectWallet": "지갑 연결",
+      "pleaseConnect": "대출하려면 지갑을 연결해주세요",
+      "matchSuccess": "대출 매칭 성공! 대출을 활성화하세요.",
+      "matchError": "대출 매칭 실패",
+      "loadError": "마켓플레이스 데이터 로드 실패"
+    }
+  },
+  "createLoan": {
+    "title": "대출 요청 생성",
+    "subtitle": "조건을 설정하고 담보를 추가하여 새로운 대출 요청을 생성하세요",
+    "form": {
+      "loanDetails": "대출 상세 정보",
+      "asset": "대출 자산",
+      "selectAsset": "자산 선택",
+      "amount": "금액",
+      "enterAmount": "금액 입력",
+      "interestRate": "이자율 (%)",
+      "duration": "대출 기간 (일)",
+      "collateralInfo": "담보 정보",
+      "collateralAsset": "담보 자산",
+      "collateralAmount": "담보 금액",
+      "addCollateral": "담보 추가",
+      "removeCollateral": "제거",
+      "summary": "요약",
+      "totalRepayment": "총 상환액",
+      "dueDate": "만기일",
+      "createRequest": "대출 요청 생성"
+    },
+    "toast": {
+      "connectWallet": "지갑 연결",
+      "pleaseConnect": "대출 요청을 생성하려면 지갑을 연결해주세요",
+      "fillRequired": "필수 항목을 모두 입력해주세요",
+      "addCollateral": "담보를 하나 이상 추가해주세요",
+      "createSuccess": "대출 요청이 성공적으로 생성되었습니다!",
+      "createError": "대출 요청 생성 실패"
+    }
+  },
+  "dashboard": {
+    "title": "내 대출",
+    "tabs": {
+      "borrowed": "빌린 대출",
+      "lent": "빌려준 대출"
+    },
+    "noLoans": {
+      "borrowed": {
+        "title": "빌린 대출이 없습니다",
+        "description": "대출 요청을 생성하여 시작하세요"
+      },
+      "lent": {
+        "title": "빌려준 대출이 없습니다",
+        "description": "마켓플레이스에서 대출 요청을 탐색하세요"
+      }
+    },
+    "status": {
+      "created": "생성됨",
+      "matched": "매칭됨",
+      "active": "활성",
+      "repaid": "상환됨",
+      "liquidated": "청산됨"
+    },
+    "card": {
+      "interest": "이자율",
+      "repayment": "상환액",
+      "due": "만기",
+      "collateral": "담보",
+      "viewDetails": "상세 보기"
+    }
+  },
+  "loanDetail": {
+    "loading": "대출 정보 로딩 중...",
+    "notFound": "대출을 찾을 수 없습니다",
+    "overview": "대출 개요",
+    "loanAmount": "대출 금액",
+    "interestRate": "이자율",
+    "totalRepayment": "총 상환액",
+    "dueDate": "만기일",
+    "status": "상태",
+    "timeline": "타임라인",
+    "created": "생성됨",
+    "matched": "매칭됨",
+    "activated": "활성화됨",
+    "repaid": "상환됨",
+    "collateral": "담보 정보",
+    "actions": {
+      "title": "작업",
+      "activate": "대출 활성화",
+      "repay": "대출 상환",
+      "liquidate": "담보 청산",
+      "activateDesc": "대출을 활성화하고 자금을 이체합니다",
+      "repayDesc": "대출을 상환하고 담보를 회수합니다",
+      "liquidateDesc": "만기일이 지난 대출의 담보를 청산합니다"
+    },
+    "toast": {
+      "activateSuccess": "대출이 성공적으로 활성화되었습니다!",
+      "activateError": "대출 활성화 실패",
+      "repaySuccess": "대출이 성공적으로 상환되었습니다!",
+      "repayError": "대출 상환 실패",
+      "liquidateSuccess": "담보가 성공적으로 청산되었습니다!",
+      "liquidateError": "담보 청산 실패"
+    }
+  },
+  "wallet": {
+    "connect": "지갑 연결",
+    "connecting": "연결 중...",
+    "connected": "연결됨",
+    "disconnect": "연결 해제",
+    "noMetaMask": "MetaMask가 설치되지 않았습니다",
+    "installMetaMask": "MetaMask 설치",
+    "error": "지갑 연결 오류",
+    "authError": "인증 실패"
+  }
+}
