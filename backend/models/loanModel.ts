@@ -34,8 +34,8 @@ export class Loan {
   @Column({ type: 'timestamp', nullable: true })
   closed_at: Date;
 
-  @Column({ type: 'varchar' })
-  lender_id: string;
+  @Column({ type: 'varchar', nullable: true })
+  lender_id: string | null;
 
   @Column({ type: 'varchar' })
   borrower_id: string;

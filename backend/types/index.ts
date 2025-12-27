@@ -71,3 +71,29 @@ export interface JwtPayload {
   user_id: string;
   wallet_address: string;
 }
+
+// Transaction Log Types
+export enum TxDirection {
+  DEPOSIT = 'deposit',
+  WITHDRAW = 'withdraw',
+  LOCK = 'lock',
+  UNLOCK = 'unlock',
+  LIQUIDATE = 'liquidate',
+}
+
+export enum TxStatus {
+  PENDING = 'pending',
+  CONFIRMED = 'confirmed',
+  FAILED = 'failed',
+}
+
+export interface CreateTxLogDto {
+  txHash: string;
+  direction: TxDirection;
+  amount: number;
+  fromAddress: string;
+  toAddress: string;
+  loanId: string;
+  assetId: string;
+  txStatus?: TxStatus;
+}

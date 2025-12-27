@@ -4,14 +4,20 @@ import { Loan } from '../models/loanModel';
 import { Collateral } from '../models/collaterals';
 import { CreateLoanDto, MatchLoanDto, LoanStatus } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { ContractService } from '../contracts';
+import { TxLogService } from './txLogService';
 
 export class LoanService {
   private loanRepository: Repository<Loan>;
   private collateralRepository: Repository<Collateral>;
+  private contractService: ContractService;
+  private txLogService: TxLogService;
 
   constructor() {
     this.loanRepository = AppDataSource.getRepository(Loan);
     this.collateralRepository = AppDataSource.getRepository(Collateral);
+    this.contractService = new ContractService();
+    this.txLogService = new TxLogService();
   }
 
   /**
@@ -95,7 +101,7 @@ export class LoanService {
     const loan = this.loanRepository.create({
       loan_id,
       borrower_id: dto.borrower_id,
-      lender_id: '', // 아직 매칭되지 않음
+      lender_id: null, // 아직 매칭되지 않음
       loan_asset_id: dto.loan_asset_id,
       loan_amount: dto.loan_amount,
       interest_rate_pct: dto.interest_rate_pct,
@@ -159,9 +165,58 @@ export class LoanService {
       throw new Error('Loan must be matched before activation');
     }
 
-    loan.status = LoanStatus.ACTIVE;
+    if (!loan.lender_id) {
+      throw new Error('Lender not found for this loan');
+    }
 
-    return await this.loanRepository.save(loan);
+    // 담보 정보 조회
+    const collaterals = await this.collateralRepository.find({
+      where: { loan_id },
+      relations: ['asset'],
+    });
+
+    if (!collaterals || collaterals.length === 0) {
+      throw new Error('No collaterals found for this loan');
+    }
+
+    // 담보 토큰 ID 추출
+    const collateralTokenIds = collaterals
+      .map(c => c.token_id)
+      .filter((id): id is string => id !== null);
+
+    // 스마트 컨트랙트에서 대출 활성화
+    try {
+      const txResult = await this.contractService.activateLoan(
+        loan_id,
+        loan.borrower.wallet_address,
+        loan.lender.wallet_address,
+        loan.loan_amount.toString(),
+        collateralTokenIds,
+        loan.total_repay_amount.toString(),
+        Math.floor(loan.repay_due_at.getTime() / 1000)
+      );
+
+      if (!txResult.success) {
+        throw new Error('Blockchain transaction failed');
+      }
+
+      // 트랜잭션 로그 기록
+      await this.txLogService.logLoanActivation(
+        txResult.txHash,
+        loan_id,
+        loan.borrower.wallet_address,
+        loan.lender.wallet_address,
+        parseFloat(loan.loan_amount.toString()),
+        loan.loan_asset_id
+      );
+
+      // 대출 상태 업데이트
+      loan.status = LoanStatus.ACTIVE;
+      return await this.loanRepository.save(loan);
+    } catch (error) {
+      console.error('Error activating loan:', error);
+      throw new Error(`Failed to activate loan: ${(error as Error).message}`);
+    }
   }
 
   /**
@@ -178,10 +233,52 @@ export class LoanService {
       throw new Error('Only active loans can be repaid');
     }
 
-    loan.status = LoanStatus.REPAID;
-    loan.closed_at = new Date();
+    if (!loan.lender_id) {
+      throw new Error('Lender not found for this loan');
+    }
 
-    return await this.loanRepository.save(loan);
+    // 담보 정보 조회
+    const collaterals = await this.collateralRepository.find({
+      where: { loan_id },
+    });
+
+    const collateralTokenIds = collaterals
+      .map(c => c.token_id)
+      .filter((id): id is string => id !== null);
+
+    // 스마트 컨트랙트에서 대출 상환
+    try {
+      const txResult = await this.contractService.repayLoan(
+        loan_id,
+        loan.borrower.wallet_address,
+        loan.lender.wallet_address,
+        loan.total_repay_amount.toString(),
+        collateralTokenIds
+      );
+
+      if (!txResult.success) {
+        throw new Error('Blockchain transaction failed');
+      }
+
+      // 트랜잭션 로그 기록
+      await this.txLogService.logLoanRepayment(
+        txResult.txHash,
+        loan_id,
+        loan.borrower.wallet_address,
+        loan.lender.wallet_address,
+        parseFloat(loan.total_repay_amount.toString()),
+        loan.loan_asset_id
+      );
+
+      // 대출 상태 업데이트
+      loan.status = LoanStatus.REPAID;
+      loan.closed_at = new Date();
+
+      return await this.loanRepository.save(loan);
+    } catch (error) {
+      console.error('Error repaying loan:', error);
+      throw new Error(`Failed to repay loan: ${(error as Error).message}`);
+    }
   }
 
   /**
@@ -203,10 +300,50 @@ export class LoanService {
       throw new Error('Loan has not expired yet');
     }
 
-    loan.status = LoanStatus.LIQUIDATED;
-    loan.closed_at = new Date();
+    if (!loan.lender_id) {
+      throw new Error('Lender not found for this loan');
+    }
 
-    return await this.loanRepository.save(loan);
+    // 담보 정보 조회
+    const collaterals = await this.collateralRepository.find({
+      where: { loan_id },
+    });
+
+    const collateralTokenIds = collaterals
+      .map(c => c.token_id)
+      .filter((id): id is string => id !== null);
+
+    // 스마트 컨트랙트에서 대출 청산
+    try {
+      const txResult = await this.contractService.liquidateLoan(
+        loan_id,
+        loan.borrower.wallet_address,
+        loan.lender.wallet_address,
+        collateralTokenIds
+      );
+
+      if (!txResult.success) {
+        throw new Error('Blockchain transaction failed');
+      }
+
+      // 트랜잭션 로그 기록
+      await this.txLogService.logLoanLiquidation(
+        txResult.txHash,
+        loan_id,
+        loan.borrower.wallet_address,
+        loan.lender.wallet_address,
+        loan.loan_asset_id
+      );
+
+      // 대출 상태 업데이트
+      loan.status = LoanStatus.LIQUIDATED;
+      loan.closed_at = new Date();
+
+      return await this.loanRepository.save(loan);
+    } catch (error) {
+      console.error('Error liquidating loan:', error);
+      throw new Error(`Failed to liquidate loan: ${(error as Error).message}`);
+    }
   }
 
   /**

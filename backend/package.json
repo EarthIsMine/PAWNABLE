@@ -10,7 +10,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "tsx index.ts",
     "dev": "tsx watch index.ts",
-    "seed": "tsx seed.ts"
+    "seed": "tsx seed.ts",
+    "test:token": "tsx scripts/generate-test-token.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.3.14",
