@@ -1,0 +1,588 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-12-29T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "wrk_pawnable",
+      "parentId": null,
+      "_type": "workspace",
+      "name": "PAWNABLE API",
+      "description": "PAWNABLE - P2P NFT-backed Loan Platform API Collection",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_base",
+      "parentId": "wrk_pawnable",
+      "_type": "environment",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://yt4307.mooo.com:8085",
+        "api_url": "http://yt4307.mooo.com:8085/api",
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoidGVzdC11c2VyLTAwMSIsIndhbGxldF9hZGRyZXNzIjoiMHg3NDJkMzVDYzY2MzRDMDUzMjkyNWEzYjg0NEJjOWU3NTk1ZjBiRWIiLCJpYXQiOjE3NjY5OTU1MDIsImV4cCI6MTc2NzYwMDMwMn0.HnetMngYPzo1HXL83LFRGEGG_G803Q9RIexA370ZWh0",
+        "user_id": "test-user-001",
+        "wallet_address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+        "loan_id": "placeholder-loan-id",
+        "asset_id": "placeholder-asset-id"
+      },
+      "dataPropertyOrder": {
+        "&": [
+          "base_url",
+          "api_url",
+          "token",
+          "user_id",
+          "wallet_address",
+          "loan_id",
+          "asset_id"
+        ]
+      },
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1
+    },
+    {
+      "_id": "fld_basic",
+      "parentId": "wrk_pawnable",
+      "_type": "request_group",
+      "name": "🏠 Basic",
+      "description": "Basic health check and info endpoints",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1000
+    },
+    {
+      "_id": "req_health",
+      "parentId": "fld_basic",
+      "_type": "request",
+      "name": "Health Check",
+      "description": "Check server status",
+      "url": "{{ _.base_url }}/health",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1000
+    },
+    {
+      "_id": "req_info",
+      "parentId": "fld_basic",
+      "_type": "request",
+      "name": "API Info",
+      "description": "Get API information and available endpoints",
+      "url": "{{ _.base_url }}/",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -900
+    },
+    {
+      "_id": "fld_auth",
+      "parentId": "wrk_pawnable",
+      "_type": "request_group",
+      "name": "🔐 Authentication",
+      "description": "Authentication endpoints for wallet-based login",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -900
+    },
+    {
+      "_id": "req_auth_message",
+      "parentId": "fld_auth",
+      "_type": "request",
+      "name": "1. Get Auth Message",
+      "description": "Generate authentication message for wallet signing",
+      "url": "{{ _.api_url }}/auth/message",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"wallet_address\": \"{{ _.wallet_address }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -900
+    },
+    {
+      "_id": "req_auth_login",
+      "parentId": "fld_auth",
+      "_type": "request",
+      "name": "2. Login (Need Signature)",
+      "description": "Login with signed message (requires real wallet signature)",
+      "url": "{{ _.api_url }}/auth/login",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"wallet_address\": \"{{ _.wallet_address }}\",\n  \"message\": \"Welcome to PAWNABLE!\\n\\nSign this message to authenticate.\\n\\nWallet: {{ _.wallet_address }}\\nTimestamp: 1735430400000\",\n  \"signature\": \"0x_REPLACE_WITH_REAL_SIGNATURE\",\n  \"timestamp\": 1735430400000\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -890
+    },
+    {
+      "_id": "req_auth_verify",
+      "parentId": "fld_auth",
+      "_type": "request",
+      "name": "3. Verify Token",
+      "description": "Verify JWT token validity",
+      "url": "{{ _.api_url }}/auth/verify",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": -880
+    },
+    {
+      "_id": "fld_users",
+      "parentId": "wrk_pawnable",
+      "_type": "request_group",
+      "name": "👤 Users",
+      "description": "User management endpoints",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -800
+    },
+    {
+      "_id": "req_users_all",
+      "parentId": "fld_users",
+      "_type": "request",
+      "name": "Get All Users",
+      "description": "Get all users (requires auth)",
+      "url": "{{ _.api_url }}/users",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": -800
+    },
+    {
+      "_id": "req_users_me",
+      "parentId": "fld_users",
+      "_type": "request",
+      "name": "Get My Info",
+      "description": "Get current user information",
+      "url": "{{ _.api_url }}/users/me",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": -790
+    },
+    {
+      "_id": "req_users_by_id",
+      "parentId": "fld_users",
+      "_type": "request",
+      "name": "Get User by ID",
+      "description": "Get specific user by ID",
+      "url": "{{ _.api_url }}/users/{{ _.user_id }}",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": -780
+    },
+    {
+      "_id": "req_users_by_wallet",
+      "parentId": "fld_users",
+      "_type": "request",
+      "name": "Get User by Wallet (Public)",
+      "description": "Get user by wallet address (no auth required)",
+      "url": "{{ _.api_url }}/users/wallet/{{ _.wallet_address }}",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -770
+    },
+    {
+      "_id": "req_users_create",
+      "parentId": "fld_users",
+      "_type": "request",
+      "name": "Create User",
+      "description": "Create new user",
+      "url": "{{ _.api_url }}/users",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"wallet_address\": \"{{ _.wallet_address }}\",\n  \"username\": \"testuser\",\n  \"email\": \"test@example.com\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -760
+    },
+    {
+      "_id": "req_users_update",
+      "parentId": "fld_users",
+      "_type": "request",
+      "name": "Update User",
+      "description": "Update user information",
+      "url": "{{ _.api_url }}/users/{{ _.user_id }}",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"username\": \"updated_username\",\n  \"email\": \"updated@example.com\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": -750
+    },
+    {
+      "_id": "fld_assets",
+      "parentId": "wrk_pawnable",
+      "_type": "request_group",
+      "name": "💎 Assets",
+      "description": "Asset management endpoints",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -700
+    },
+    {
+      "_id": "req_assets_all",
+      "parentId": "fld_assets",
+      "_type": "request",
+      "name": "Get All Assets (Public)",
+      "description": "Get all available assets",
+      "url": "{{ _.api_url }}/assets",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -700
+    },
+    {
+      "_id": "req_assets_by_id",
+      "parentId": "fld_assets",
+      "_type": "request",
+      "name": "Get Asset by ID (Public)",
+      "description": "Get specific asset by ID",
+      "url": "{{ _.api_url }}/assets/{{ _.asset_id }}",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -690
+    },
+    {
+      "_id": "req_assets_by_blockchain",
+      "parentId": "fld_assets",
+      "_type": "request",
+      "name": "Get Assets by Blockchain (Public)",
+      "description": "Get assets filtered by blockchain",
+      "url": "{{ _.api_url }}/assets/blockchain/ethereum",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -680
+    },
+    {
+      "_id": "req_assets_create",
+      "parentId": "fld_assets",
+      "_type": "request",
+      "name": "Create Asset (Admin)",
+      "description": "Create new asset (admin only)",
+      "url": "{{ _.api_url }}/assets",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"blockchain\": \"ethereum\",\n  \"asset_type\": \"erc20\",\n  \"symbol\": \"USDT\",\n  \"name\": \"Tether USD\",\n  \"contract_address\": \"0xdac17f958d2ee523a2206206994597c13d831ec7\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": -670
+    },
+    {
+      "_id": "req_assets_create_eth",
+      "parentId": "fld_assets",
+      "_type": "request",
+      "name": "Create ETH Asset (Admin)",
+      "description": "Create ETH native asset",
+      "url": "{{ _.api_url }}/assets",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"blockchain\": \"ethereum\",\n  \"asset_type\": \"native\",\n  \"symbol\": \"ETH\",\n  \"name\": \"Ethereum\",\n  \"contract_address\": \"\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": -665
+    },
+    {
+      "_id": "fld_loans",
+      "parentId": "wrk_pawnable",
+      "_type": "request_group",
+      "name": "💰 Loans",
+      "description": "Loan management endpoints",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -600
+    },
+    {
+      "_id": "req_loans_marketplace",
+      "parentId": "fld_loans",
+      "_type": "request",
+      "name": "Get Marketplace (Public)",
+      "description": "Get all loans waiting for matching",
+      "url": "{{ _.api_url }}/loans/marketplace",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -600
+    },
+    {
+      "_id": "req_loans_all",
+      "parentId": "fld_loans",
+      "_type": "request",
+      "name": "Get All Loans",
+      "description": "Get all loans (requires auth)",
+      "url": "{{ _.api_url }}/loans",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": -590
+    },
+    {
+      "_id": "req_loans_by_id",
+      "parentId": "fld_loans",
+      "_type": "request",
+      "name": "Get Loan by ID",
+      "description": "Get specific loan details",
+      "url": "{{ _.api_url }}/loans/{{ _.loan_id }}",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": -580
+    },
+    {
+      "_id": "req_loans_by_borrower",
+      "parentId": "fld_loans",
+      "_type": "request",
+      "name": "Get Loans by Borrower",
+      "description": "Get all loans for a specific borrower",
+      "url": "{{ _.api_url }}/loans/borrower/{{ _.user_id }}",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": -570
+    },
+    {
+      "_id": "req_loans_by_lender",
+      "parentId": "fld_loans",
+      "_type": "request",
+      "name": "Get Loans by Lender",
+      "description": "Get all loans for a specific lender",
+      "url": "{{ _.api_url }}/loans/lender/{{ _.user_id }}",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": -560
+    },
+    {
+      "_id": "req_loans_create",
+      "parentId": "fld_loans",
+      "_type": "request",
+      "name": "Create Loan",
+      "description": "Create a new loan request",
+      "url": "{{ _.api_url }}/loans",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"borrower_id\": \"{{ _.user_id }}\",\n  \"loan_asset_id\": \"{{ _.asset_id }}\",\n  \"loan_amount\": 1000,\n  \"interest_rate_pct\": 5.0,\n  \"total_repay_amount\": 1050,\n  \"repay_due_at\": \"2025-12-31T23:59:59Z\",\n  \"collaterals\": [\n    {\n      \"asset_id\": \"{{ _.asset_id }}\",\n      \"amount\": 0.5,\n      \"token_id\": null\n    }\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": -550
+    },
+    {
+      "_id": "req_loans_match",
+      "parentId": "fld_loans",
+      "_type": "request",
+      "name": "Match Loan",
+      "description": "Match a loan with a lender",
+      "url": "{{ _.api_url }}/loans/{{ _.loan_id }}/match",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lender_id\": \"{{ _.user_id }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": -540
+    },
+    {
+      "_id": "req_loans_activate",
+      "parentId": "fld_loans",
+      "_type": "request",
+      "name": "Activate Loan",
+      "description": "Activate a matched loan",
+      "url": "{{ _.api_url }}/loans/{{ _.loan_id }}/activate",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": -530
+    },
+    {
+      "_id": "req_loans_repay",
+      "parentId": "fld_loans",
+      "_type": "request",
+      "name": "Repay Loan",
+      "description": "Repay an active loan",
+      "url": "{{ _.api_url }}/loans/{{ _.loan_id }}/repay",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": -520
+    },
+    {
+      "_id": "req_loans_liquidate",
+      "parentId": "fld_loans",
+      "_type": "request",
+      "name": "Liquidate Loan",
+      "description": "Liquidate an overdue loan",
+      "url": "{{ _.api_url }}/loans/{{ _.loan_id }}/liquidate",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": -510
+    },
+    {
+      "_id": "req_loans_cancel",
+      "parentId": "fld_loans",
+      "_type": "request",
+      "name": "Cancel Loan",
+      "description": "Cancel a pending loan",
+      "url": "{{ _.api_url }}/loans/{{ _.loan_id }}",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}"
+      },
+      "metaSortKey": -500
+    }
+  ]
+}
