@@ -3,15 +3,9 @@
 import Link from "next/link";
 import styled from "@emotion/styled";
 import { useTranslations } from "next-intl";
-import { Languages, Wallet } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { WalletConnectButton } from "@/components/wallet-connect-button";
+import { LocaleSwitcher } from "@/components/locale-switcher";
 
 export function Navbar() {
   const t = useTranslations("navbar");
@@ -28,53 +22,15 @@ export function Navbar() {
         </Left>
 
         <Right>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <GhostButton type="button" aria-label={t("changeLanguage")}>
-                <IconBox>
-                  <Languages width={18} height={18} />
-                </IconBox>
-                <GhostText>{t("changeLanguage")}</GhostText>
-              </GhostButton>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent align="end">
-              {/* TODO: 실제 로케일 라우팅/핸들러에 맞게 onSelect/Link로 수정 */}
-              <DropdownMenuItem
-                onSelect={() => {
-                  /* set locale: ko */
-                }}
-              >
-                한국어
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => {
-                  /* set locale: en */
-                }}
-              >
-                English
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Button
-            size="lg"
-            tone="neutral"
-            onClick={() => {
-              /* connect wallet */
-            }}
-          >
-            <Wallet width={18} height={18} />
-            {t("connectWallet")}
-          </Button>
+          <LocaleSwitcher />
+          <WalletConnectButton />
         </Right>
       </Container>
     </Bar>
   );
 }
 
-/* styles (Navbar는 feature component이므로 JSX 아래 배치) */
-
+/* styles */
 const Bar = styled.header`
   position: sticky;
   top: 0;
@@ -137,47 +93,4 @@ const Right = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
-`;
-
-const GhostButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-
-  height: 44px;
-  padding: 0 12px;
-
-  border-radius: calc(var(--radius) - 3px);
-  border: 1px solid var(--border);
-  background: color-mix(in oklab, var(--card) 55%, transparent);
-  color: var(--foreground);
-
-  font-size: 14px;
-  font-weight: 600;
-
-  transition:
-    background 140ms ease,
-    opacity 140ms ease;
-
-  &:hover {
-    background: color-mix(in oklab, var(--card) 70%, transparent);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 2px;
-  }
-`;
-
-const IconBox = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted-foreground);
-`;
-
-const GhostText = styled.span`
-  @media (max-width: 480px) {
-    display: none; /* 모바일에서는 아이콘만 */
-  }
 `;
