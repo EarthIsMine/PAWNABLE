@@ -8,32 +8,19 @@ export const DropdownMenu = DropdownMenuPrimitive.Root;
 export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 
 const Content = styled(DropdownMenuPrimitive.Content)`
-  min-width: 200px;
-  padding: 8px;
-  border-radius: calc(var(--radius) - 3px);
+  z-index: 60;
+  min-width: 180px;
+  padding: 6px;
 
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 3px);
   background: var(--popover);
   color: var(--popover-foreground);
-  border: 1px solid var(--border);
 
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
 
-  animation: dropdownIn 120ms ease-out;
-
-  @keyframes dropdownIn {
-    from {
-      opacity: 0;
-      transform: translateY(-4px) scale(0.98);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-
-  &:focus {
-    outline: none;
-  }
+  /* hover 배경이 잘리지 않게 */
+  overflow: visible;
 `;
 
 const Item = styled(DropdownMenuPrimitive.Item)`
@@ -41,6 +28,7 @@ const Item = styled(DropdownMenuPrimitive.Item)`
   align-items: center;
   gap: 10px;
 
+  width: 100%;
   padding: 10px 10px;
   border-radius: calc(var(--radius) - 6px);
 
@@ -50,21 +38,43 @@ const Item = styled(DropdownMenuPrimitive.Item)`
 
   color: var(--foreground);
   background: transparent;
+
   user-select: none;
   cursor: default;
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--ring) 70%, transparent);
+  }
+
+  /* ✅ 마우스 hover에서도 보이게 */
+  &:hover {
+    background: color-mix(in oklab, var(--card) 70%, transparent);
+  }
+
+  /* ✅ 키보드/포인터 이동 시 Radix가 주는 상태 */
+  &[data-highlighted] {
+    background: color-mix(in oklab, var(--card) 70%, transparent);
+  }
 
   &[data-disabled] {
     opacity: 0.5;
     pointer-events: none;
   }
 
-  &[data-highlighted] {
-    background: color-mix(in oklab, var(--card) 70%, transparent);
-    color: var(--foreground);
+  /* ✅ 현재 선택된 값 */
+  &[data-active="true"] {
+    background: color-mix(in oklab, var(--accent) 18%, transparent);
+    border: 1px solid color-mix(in oklab, var(--accent) 35%, var(--border));
   }
 
-  &:focus {
-    outline: none;
+  &[data-active="true"]:hover,
+  &[data-active="true"][data-highlighted] {
+    background: color-mix(in oklab, var(--accent) 22%, transparent);
   }
 `;
 
