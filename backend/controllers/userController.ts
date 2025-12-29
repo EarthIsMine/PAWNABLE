@@ -72,7 +72,7 @@ export class UserController {
     try {
       const dto: CreateUserDto = req.body;
 
-      if (!dto.wallet_address || !dto.nickname || !dto.email) {
+      if (!dto.wallet_address) {
         return ResponseUtil.badRequest(res, 'Missing required fields');
       }
 
