@@ -1,191 +1,78 @@
-'use client'
+"use client";
 
-// Inspired by react-hot-toast library
-import * as React from 'react'
+import { toast as sonnerToast } from "sonner";
+import type React from "react";
 
-import type { ToastActionElement, ToastProps } from '@/components/ui/toast'
+/**
+ * 프로젝트 내 기존 호출부 호환을 위한 타입
+ * - title/description/action/variant 패턴을 유지
+ * - 내부는 sonner로 렌더링 (Toaster는 이미 layout에 있음)
+ */
 
-const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+type ToastVariant = "default" | "destructive" | "success" | "warning" | "info";
 
-type ToasterToast = ToastProps & {
-  id: string
-  title?: React.ReactNode
-  description?: React.ReactNode
-  action?: ToastActionElement
-}
+export type ToastActionElement = React.ReactNode;
 
-const actionTypes = {
-  ADD_TOAST: 'ADD_TOAST',
-  UPDATE_TOAST: 'UPDATE_TOAST',
-  DISMISS_TOAST: 'DISMISS_TOAST',
-  REMOVE_TOAST: 'REMOVE_TOAST',
-} as const
+export type ToastInput = {
+  title?: React.ReactNode;
+  description?: React.ReactNode;
+  action?: ToastActionElement;
+  /**
+   * 기존 shadcn 패턴 호환 (destructive 등)
+   * sonner의 type으로 매핑됨
+   */
+  variant?: ToastVariant;
+  /**
+   * 옵션: 화면에 오래 띄우고 싶을 때
+   */
+  duration?: number;
+};
 
-let count = 0
-
-function genId() {
-  count = (count + 1) % Number.MAX_SAFE_INTEGER
-  return count.toString()
-}
-
-type ActionType = typeof actionTypes
-
-type Action =
-  | {
-      type: ActionType['ADD_TOAST']
-      toast: ToasterToast
-    }
-  | {
-      type: ActionType['UPDATE_TOAST']
-      toast: Partial<ToasterToast>
-    }
-  | {
-      type: ActionType['DISMISS_TOAST']
-      toastId?: ToasterToast['id']
-    }
-  | {
-      type: ActionType['REMOVE_TOAST']
-      toastId?: ToasterToast['id']
-    }
-
-interface State {
-  toasts: ToasterToast[]
-}
-
-const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
-
-const addToRemoveQueue = (toastId: string) => {
-  if (toastTimeouts.has(toastId)) {
-    return
-  }
-
-  const timeout = setTimeout(() => {
-    toastTimeouts.delete(toastId)
-    dispatch({
-      type: 'REMOVE_TOAST',
-      toastId: toastId,
-    })
-  }, TOAST_REMOVE_DELAY)
-
-  toastTimeouts.set(toastId, timeout)
-}
-
-export const reducer = (state: State, action: Action): State => {
-  switch (action.type) {
-    case 'ADD_TOAST':
-      return {
-        ...state,
-        toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
-      }
-
-    case 'UPDATE_TOAST':
-      return {
-        ...state,
-        toasts: state.toasts.map((t) =>
-          t.id === action.toast.id ? { ...t, ...action.toast } : t,
-        ),
-      }
-
-    case 'DISMISS_TOAST': {
-      const { toastId } = action
-
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
-      if (toastId) {
-        addToRemoveQueue(toastId)
-      } else {
-        state.toasts.forEach((toast) => {
-          addToRemoveQueue(toast.id)
-        })
-      }
-
-      return {
-        ...state,
-        toasts: state.toasts.map((t) =>
-          t.id === toastId || toastId === undefined
-            ? {
-                ...t,
-                open: false,
-              }
-            : t,
-        ),
-      }
-    }
-    case 'REMOVE_TOAST':
-      if (action.toastId === undefined) {
-        return {
-          ...state,
-          toasts: [],
-        }
-      }
-      return {
-        ...state,
-        toasts: state.toasts.filter((t) => t.id !== action.toastId),
-      }
+function mapVariantToType(variant?: ToastVariant): "success" | "error" | "warning" | "info" | undefined {
+  switch (variant) {
+    case "destructive":
+      return "error";
+    case "success":
+      return "success";
+    case "warning":
+      return "warning";
+    case "info":
+      return "info";
+    default:
+      return undefined;
   }
 }
 
-const listeners: Array<(state: State) => void> = []
+export function toast(input: ToastInput) {
+  const { title, description, action, variant, duration } = input;
 
-let memoryState: State = { toasts: [] }
+  const type = mapVariantToType(variant);
 
-function dispatch(action: Action) {
-  memoryState = reducer(memoryState, action)
-  listeners.forEach((listener) => {
-    listener(memoryState)
-  })
+  // Sonner는 title을 첫 번째 인자(문자열/노드)로 받고,
+  // description은 옵션으로 받음.
+  if (type === "success") {
+    return sonnerToast.success(title ?? "", { description, action, duration });
+  }
+  if (type === "error") {
+    return sonnerToast.error(title ?? "", { description, action, duration });
+  }
+  if (type === "warning") {
+    return sonnerToast.warning(title ?? "", { description, action, duration });
+  }
+  if (type === "info") {
+    return sonnerToast.info(title ?? "", { description, action, duration });
+  }
+
+  return sonnerToast(title ?? "", { description, action, duration });
 }
 
-type Toast = Omit<ToasterToast, 'id'>
-
-function toast({ ...props }: Toast) {
-  const id = genId()
-
-  const update = (props: ToasterToast) =>
-    dispatch({
-      type: 'UPDATE_TOAST',
-      toast: { ...props, id },
-    })
-  const dismiss = () => dispatch({ type: 'DISMISS_TOAST', toastId: id })
-
-  dispatch({
-    type: 'ADD_TOAST',
-    toast: {
-      ...props,
-      id,
-      open: true,
-      onOpenChange: (open) => {
-        if (!open) dismiss()
-      },
-    },
-  })
-
+export function useToast() {
   return {
-    id: id,
-    dismiss,
-    update,
-  }
-}
-
-function useToast() {
-  const [state, setState] = React.useState<State>(memoryState)
-
-  React.useEffect(() => {
-    listeners.push(setState)
-    return () => {
-      const index = listeners.indexOf(setState)
-      if (index > -1) {
-        listeners.splice(index, 1)
-      }
-    }
-  }, [state])
-
-  return {
-    ...state,
     toast,
-    dismiss: (toastId?: string) => dispatch({ type: 'DISMISS_TOAST', toastId }),
-  }
+    dismiss: (toastId?: string | number) => {
+      // sonner는 id 기반 dismiss 지원
+      if (toastId === undefined) sonnerToast.dismiss();
+      else sonnerToast.dismiss(toastId);
+    },
+  };
 }
-
-export { useToast, toast }
