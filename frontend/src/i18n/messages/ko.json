@@ -16,6 +16,8 @@
   },
   "navbar": {
     "marketplace": "마켓플레이스",
+    "changeLanguage": "언어 변경",
+    "connectWallet": "지갑 연결",
     "dashboard": "대시보드",
     "createLoan": "대출 생성"
   },
@@ -70,6 +72,25 @@
   "marketplace": {
     "title": "대출 마켓플레이스",
     "subtitle": "사용 가능한 대출 요청을 탐색하고 이자를 받으며 대출하세요",
+
+    "searchPlaceholder": "검색",
+    "filters": "필터",
+    "sort": "정렬",
+    "count": "{count}건",
+
+    "sortOptions": {
+      "newest": "최신순",
+      "aprHigh": "이자율 높은 순",
+      "aprLow": "이자율 낮은 순",
+      "dueSoon": "만기 임박 순"
+    },
+    "filterLabels": {
+      "asset": "자산",
+      "status": "상태",
+      "duration": "기간",
+      "apr": "이자율"
+    },
+
     "noLoans": {
       "title": "이용 가능한 대출이 없습니다",
       "description": "첫 번째로 대출 요청을 생성하세요",
@@ -81,7 +102,14 @@
       "due": "만기",
       "collateral": "담보",
       "lendNow": "지금 대출하기",
-      "connectToLend": "대출하려면 지갑 연결"
+      "connectToLend": "대출하려면 지갑 연결",
+
+      "borrowerSetsRate": "차입자가 조건을 제시합니다",
+      "ctaConnectWallet": "지갑 연결",
+
+      "apr": "이자율",
+      "totalRepay": "총 상환액",
+      "walletRequired": "대출하려면 지갑 연결"
     },
     "toast": {
       "connectWallet": "지갑 연결",

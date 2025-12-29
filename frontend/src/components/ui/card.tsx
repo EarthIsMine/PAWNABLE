@@ -1,92 +1,48 @@
-import * as React from 'react'
+import * as React from "react";
+import styled from "@emotion/styled";
 
-import { cn } from '@/lib/utils'
+export type CardProps = React.HTMLAttributes<HTMLDivElement>;
+export type CardHeaderProps = React.HTMLAttributes<HTMLDivElement>;
+export type CardContentProps = React.HTMLAttributes<HTMLDivElement>;
+export type CardFooterProps = React.HTMLAttributes<HTMLDivElement>;
+export type CardTitleProps = React.HTMLAttributes<HTMLHeadingElement>;
+export type CardDescriptionProps = React.HTMLAttributes<HTMLParagraphElement>;
 
-function Card({ className, ...props }: React.ComponentProps<'div'>) {
-  return (
-    <div
-      data-slot="card"
-      className={cn(
-        'bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm',
-        className,
-      )}
-      {...props}
-    />
-  )
-}
+export const Card = styled.div`
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--card-foreground);
+`;
 
-function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
-  return (
-    <div
-      data-slot="card-header"
-      className={cn(
-        '@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6',
-        className,
-      )}
-      {...props}
-    />
-  )
-}
+export const CardHeader = styled.div`
+  padding: 20px 24px 0;
+`;
 
-function CardTitle({ className, ...props }: React.ComponentProps<'div'>) {
-  return (
-    <div
-      data-slot="card-title"
-      className={cn('leading-none font-semibold', className)}
-      {...props}
-    />
-  )
-}
+export const CardTitle = styled.h3`
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.2;
+  letter-spacing: 0.005em;
+  font-weight: 800;
+`;
 
-function CardDescription({ className, ...props }: React.ComponentProps<'div'>) {
-  return (
-    <div
-      data-slot="card-description"
-      className={cn('text-muted-foreground text-sm', className)}
-      {...props}
-    />
-  )
-}
+export const CardDescription = styled.p`
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  letter-spacing: -0.015em;
+  color: var(--muted-foreground);
+`;
 
-function CardAction({ className, ...props }: React.ComponentProps<'div'>) {
-  return (
-    <div
-      data-slot="card-action"
-      className={cn(
-        'col-start-2 row-span-2 row-start-1 self-start justify-self-end',
-        className,
-      )}
-      {...props}
-    />
-  )
-}
+export const CardContent = styled.div`
+  padding: 24px;
+`;
 
-function CardContent({ className, ...props }: React.ComponentProps<'div'>) {
-  return (
-    <div
-      data-slot="card-content"
-      className={cn('px-6', className)}
-      {...props}
-    />
-  )
-}
-
-function CardFooter({ className, ...props }: React.ComponentProps<'div'>) {
-  return (
-    <div
-      data-slot="card-footer"
-      className={cn('flex items-center px-6 [.border-t]:pt-6', className)}
-      {...props}
-    />
-  )
-}
-
-export {
-  Card,
-  CardHeader,
-  CardFooter,
-  CardTitle,
-  CardAction,
-  CardDescription,
-  CardContent,
-}
+export const CardFooter = styled.div`
+  padding: 0 24px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+`;

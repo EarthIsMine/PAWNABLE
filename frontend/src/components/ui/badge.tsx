@@ -1,46 +1,82 @@
-import * as React from 'react'
-import { Slot } from '@radix-ui/react-slot'
-import { cva, type VariantProps } from 'class-variance-authority'
+import styled from "@emotion/styled";
 
-import { cn } from '@/lib/utils'
+type Variant =
+  | "default"
+  | "accent"
+  | "secondary"
+  | "outline"
+  | "success"
+  | "warning"
+  | "error"
+  | "info";
 
-const badgeVariants = cva(
-  'inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden',
-  {
-    variants: {
-      variant: {
-        default:
-          'border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90',
-        secondary:
-          'border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90',
-        destructive:
-          'border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
-        outline:
-          'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-    },
-  },
-)
+export type BadgeProps = React.HTMLAttributes<HTMLSpanElement> & {
+  variant?: Variant;
+};
 
-function Badge({
-  className,
-  variant,
-  asChild = false,
-  ...props
-}: React.ComponentProps<'span'> &
-  VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
-  const Comp = asChild ? Slot : 'span'
+const stylesByVariant: Record<Variant, string> = {
+  default: `
+    background: color-mix(in oklab, var(--card) 70%, transparent);
+    color: var(--foreground);
+    border: 1px solid var(--border);
+  `,
+  accent: `
+    background: color-mix(in oklab, var(--accent) 16%, transparent);
+    color: var(--accent);
+    border: 1px solid color-mix(in oklab, var(--accent) 40%, var(--border));
+  `,
+  secondary: `
+    background: color-mix(in oklab, var(--secondary) 16%, transparent);
+    color: var(--foreground);
+    border: 1px solid color-mix(in oklab, var(--secondary) 40%, var(--border));
+  `,
+  outline: `
+    background: transparent;
+    color: var(--muted-foreground);
+    border: 1px solid var(--border);
+  `,
+  success: `
+    background: color-mix(in oklab, var(--success) 16%, transparent);
+    color: var(--foreground);
+    border: 1px solid color-mix(in oklab, var(--success) 45%, var(--border));
+  `,
+  warning: `
+    background: color-mix(in oklab, var(--warning) 18%, transparent);
+    color: var(--foreground);
+    border: 1px solid color-mix(in oklab, var(--warning) 55%, var(--border));
+  `,
+  error: `
+    background: color-mix(in oklab, var(--error) 16%, transparent);
+    color: var(--foreground);
+    border: 1px solid color-mix(in oklab, var(--error) 50%, var(--border));
+  `,
+  info: `
+    background: color-mix(in oklab, var(--info) 16%, transparent);
+    color: var(--foreground);
+    border: 1px solid color-mix(in oklab, var(--info) 45%, var(--border));
+  `,
+};
 
-  return (
-    <Comp
-      data-slot="badge"
-      className={cn(badgeVariants({ variant }), className)}
-      {...props}
-    />
-  )
-}
+export const Badge = styled.span<Required<Pick<BadgeProps, "variant">>>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 
-export { Badge, badgeVariants }
+  padding: 6px 10px;
+  border-radius: 999px;
+
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: -0.015em;
+  font-weight: 600;
+
+  white-space: nowrap;
+  user-select: none;
+
+  ${({ variant }) => stylesByVariant[variant]}
+`;
+
+Badge.defaultProps = {
+  variant: "default",
+};

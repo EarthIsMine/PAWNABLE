@@ -1,203 +1,409 @@
 "use client";
 
 import Link from "next/link";
+import styled from "@emotion/styled";
+import { useTranslations } from "next-intl";
+import { ArrowRight, Shield, TrendingUp, Users, Clock } from "lucide-react";
+
+import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Navbar } from "@/components/navbar";
-import { ArrowRight, Shield, TrendingUp, Users, Clock } from "lucide-react";
-import { useTranslations } from "next-intl";
+
+const Page = styled.div`
+  min-height: 100dvh;
+`;
+
+const Section = styled.section<{
+  variant?: "hero" | "stats" | "plain" | "cta";
+}>`
+  ${({ variant }) => {
+    if (variant === "hero") {
+      return `
+        border-bottom: 1px solid var(--border);
+        background: color-mix(in oklab, var(--secondary) 60%, transparent);
+      `;
+    }
+    if (variant === "stats") {
+      return `
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        background: var(--card);
+      `;
+    }
+    if (variant === "cta") {
+      return `
+        border-top: 1px solid var(--border);
+        background: color-mix(in oklab, var(--secondary) 60%, transparent);
+      `;
+    }
+    return `
+      background: transparent;
+    `;
+  }}
+`;
+
+const Container = styled.div`
+  width: 100%;
+  max-width: 1280px; /* xl */
+  margin: 0 auto;
+  padding: 0 16px;
+`;
+
+const HeroWrap = styled.div`
+  padding: 80px 0;
+
+  @media (min-width: 768px) {
+    padding: 128px 0;
+  }
+`;
+
+const Center = styled.div`
+  margin: 0 auto;
+  max-width: 56rem; /* ~896px */
+  text-align: center;
+`;
+
+const Badge = styled.div`
+  display: inline-block;
+  margin-bottom: 24px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--card) 60%, transparent);
+  padding: 6px 16px;
+`;
+
+const BadgeText = styled.span`
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+`;
+
+const H1 = styled.h1`
+  margin: 0 0 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+
+  font-size: 40px;
+  @media (min-width: 480px) {
+    font-size: 48px;
+  }
+  @media (min-width: 768px) {
+    font-size: 56px;
+  }
+  @media (min-width: 1024px) {
+    font-size: 64px;
+  }
+`;
+
+const Subtitle = styled.p`
+  margin: 0 0 32px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: color-mix(in oklab, var(--foreground) 70%, transparent);
+
+  @media (min-width: 768px) {
+    font-size: 18px;
+  }
+`;
+
+const ButtonRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+
+  @media (min-width: 480px) {
+    flex-direction: row;
+  }
+`;
+
+const Icon16 = styled(ArrowRight)`
+  width: 16px;
+  height: 16px;
+`;
+
+const StatsWrap = styled.div`
+  padding: 48px 0;
+`;
+
+const StatsGrid = styled.div`
+  display: grid;
+  gap: 16px;
+
+  @media (min-width: 480px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+`;
+
+const StatCard = styled.div`
+  border-radius: calc(var(--radius) + 2px);
+  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--background) 30%, transparent);
+  padding: 20px 24px;
+  text-align: center;
+`;
+
+const StatValue = styled.div`
+  margin-bottom: 8px;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--accent);
+`;
+
+const StatLabel = styled.div`
+  font-size: 13px;
+  color: var(--muted-foreground);
+`;
+
+const FeaturesWrap = styled.div`
+  padding: 80px 0;
+`;
+
+const SectionHeader = styled.div`
+  margin: 0 auto 64px;
+  max-width: 42rem;
+  text-align: center;
+`;
+
+const H2 = styled.h2`
+  margin: 0 0 16px;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+
+  @media (min-width: 768px) {
+    font-size: 36px;
+  }
+`;
+
+const Subtext = styled.p`
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: color-mix(in oklab, var(--foreground) 70%, transparent);
+`;
+
+const FeaturesGrid = styled.div`
+  display: grid;
+  gap: 24px;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+`;
+
+const FeatureIconBox = styled.div`
+  display: inline-flex;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklab, var(--accent) 15%, transparent);
+  margin-bottom: 16px;
+`;
+
+const FeatureTitle = styled.h3`
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+`;
+
+const FeatureDesc = styled.p`
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+`;
+
+const CTAWrap = styled.div`
+  padding: 80px 0;
+`;
+
+const Footer = styled.footer`
+  border-top: 1px solid var(--border);
+`;
+
+const FooterWrap = styled.div`
+  padding: 32px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+
+  @media (min-width: 480px) {
+    flex-direction: row;
+  }
+`;
+
+const FooterText = styled.p`
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted-foreground);
+`;
+
+const FooterLinks = styled.div`
+  display: flex;
+  gap: 24px;
+`;
+
+const FooterLink = styled(Link)`
+  font-size: 13px;
+  color: var(--muted-foreground);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--foreground);
+  }
+`;
 
 export default function HomePage() {
   const t = useTranslations("home");
 
   return (
-    <div className="min-h-screen bg-background">
+    <Page>
       <Navbar />
 
-      {/* Hero Section */}
-      {/* 핵심: 배경 분리 + 보더로 구획 + 살짝 그라데이션(아주 약하게) */}
-      <section className="border-b border-border bg-secondary/60">
-        <div className="container mx-auto px-4 py-20 md:py-32">
-          <div className="mx-auto max-w-4xl text-center">
-            {/* Badge: primary가 너무 죽으면 accent 계열로 시각적 힘을 줌 */}
-            <div className="mb-6 inline-block rounded-full border border-border bg-card/60 px-4 py-1.5">
-              <span className="text-sm font-medium text-accent">
-                {t("badge")}
-              </span>
-            </div>
+      {/* Hero */}
+      <Section variant="hero">
+        <Container>
+          <HeroWrap>
+            <Center>
+              <Badge>
+                <BadgeText>{t("badge")}</BadgeText>
+              </Badge>
 
-            <h1 className="mb-6 text-4xl font-bold tracking-tight text-balance sm:text-5xl md:text-6xl lg:text-7xl">
-              {t("title")}
-            </h1>
+              <H1>{t("title")}</H1>
+              <Subtitle>{t("subtitle")}</Subtitle>
 
-            {/* subtitle: muted 대신 foreground 투명도로 한 단계 올림 */}
-            <p className="mb-8 text-lg text-foreground/70 text-pretty md:text-xl">
-              {t("subtitle")}
-            </p>
+              <ButtonRow>
+                <Link href="/marketplace">
+                  <Button size="lg" tone="accent">
+                    {t("exploreMarketplace")}
+                    <Icon16 />
+                  </Button>
+                </Link>
 
-            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+                <Link href="/create-loan">
+                  <Button size="lg" variant="outline">
+                    {t("createLoanRequest")}
+                  </Button>
+                </Link>
+              </ButtonRow>
+            </Center>
+          </HeroWrap>
+        </Container>
+      </Section>
+
+      {/* Stats */}
+      <Section variant="stats">
+        <Container>
+          <StatsWrap>
+            <StatsGrid>
+              {[
+                { value: "0.5%", label: t("stats.platformFee") },
+                { value: "P2P", label: t("stats.directMatching") },
+                { value: t("stats.flexible"), label: t("stats.yourRates") },
+                { value: t("stats.secure"), label: t("stats.smartContracts") },
+              ].map((item) => (
+                <StatCard key={item.label}>
+                  <StatValue>{item.value}</StatValue>
+                  <StatLabel>{item.label}</StatLabel>
+                </StatCard>
+              ))}
+            </StatsGrid>
+          </StatsWrap>
+        </Container>
+      </Section>
+
+      {/* Features */}
+      <Section>
+        <Container>
+          <FeaturesWrap>
+            <SectionHeader>
+              <H2>{t("howItWorks.title")}</H2>
+              <Subtext>{t("howItWorks.subtitle")}</Subtext>
+            </SectionHeader>
+
+            <FeaturesGrid>
+              {[
+                {
+                  Icon: Users,
+                  title: t("howItWorks.features.setTerms.title"),
+                  desc: t("howItWorks.features.setTerms.description"),
+                },
+                {
+                  Icon: Shield,
+                  title: t("howItWorks.features.collateral.title"),
+                  desc: t("howItWorks.features.collateral.description"),
+                },
+                {
+                  Icon: TrendingUp,
+                  title: t("howItWorks.features.deadlines.title"),
+                  desc: t("howItWorks.features.deadlines.description"),
+                },
+                {
+                  Icon: Clock,
+                  title: t("howItWorks.features.matching.title"),
+                  desc: t("howItWorks.features.matching.description"),
+                },
+              ].map(({ Icon, title, desc }) => (
+                <Card key={title}>
+                  <CardContent>
+                    <FeatureIconBox>
+                      <Icon width={24} height={24} color="var(--accent)" />
+                    </FeatureIconBox>
+                    <FeatureTitle>{title}</FeatureTitle>
+                    <FeatureDesc>{desc}</FeatureDesc>
+                  </CardContent>
+                </Card>
+              ))}
+            </FeaturesGrid>
+          </FeaturesWrap>
+        </Container>
+      </Section>
+
+      {/* CTA */}
+      <Section variant="cta">
+        <Container>
+          <CTAWrap>
+            <Center style={{ maxWidth: "48rem" }}>
+              <H2>{t("cta.title")}</H2>
+              <Subtext style={{ marginTop: 0, marginBottom: 32 }}>{t("cta.subtitle")}</Subtext>
+
               <Link href="/marketplace">
-                {/* Primary CTA는 accent로 고정 */}
-                <Button
-                  size="lg"
-                  className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
-                >
-                  {t("exploreMarketplace")}
-                  <ArrowRight className="h-4 w-4" />
+                <Button size="lg" tone="accent">
+                  {t("cta.viewMarketplace")}
+                  <Icon16 />
                 </Button>
               </Link>
-
-              <Link href="/create-loan">
-                {/* Secondary CTA는 outline 유지하되 카드/텍스트 대비 보강 */}
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-border bg-background/40 hover:bg-card/60"
-                >
-                  {t("createLoanRequest")}
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      {/* 핵심: bg-card/50는 너무 묻힘 -> bg-card + 구획선 강화 */}
-      <section className="border-y border-border bg-card">
-        <div className="container mx-auto px-4 py-12">
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {/* 각 항목을 "카드형"으로 만들어 배경과 분리 */}
-            {[
-              { value: "0.5%", label: t("stats.platformFee") },
-              { value: "P2P", label: t("stats.directMatching") },
-              { value: t("stats.flexible"), label: t("stats.yourRates") },
-              { value: t("stats.secure"), label: t("stats.smartContracts") },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="rounded-xl border border-border bg-background/30 px-6 py-5 text-center"
-              >
-                {/* value는 primary보다 accent가 더 잘 보임 */}
-                <div className="mb-2 text-3xl font-bold text-accent">
-                  {item.value}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {item.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="mx-auto mb-16 max-w-2xl text-center">
-          <h2 className="mb-4 text-3xl font-bold text-balance md:text-4xl">
-            {t("howItWorks.title")}
-          </h2>
-          <p className="text-foreground/70 text-pretty">
-            {t("howItWorks.subtitle")}
-          </p>
-        </div>
-
-        {/* Card에 border + 배경을 명확히 */}
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-          {[
-            {
-              Icon: Users,
-              title: t("howItWorks.features.setTerms.title"),
-              desc: t("howItWorks.features.setTerms.description"),
-            },
-            {
-              Icon: Shield,
-              title: t("howItWorks.features.collateral.title"),
-              desc: t("howItWorks.features.collateral.description"),
-            },
-            {
-              Icon: TrendingUp,
-              title: t("howItWorks.features.deadlines.title"),
-              desc: t("howItWorks.features.deadlines.description"),
-            },
-            {
-              Icon: Clock,
-              title: t("howItWorks.features.matching.title"),
-              desc: t("howItWorks.features.matching.description"),
-            },
-          ].map(({ Icon, title, desc }) => (
-            <Card key={title} className="border-border bg-card">
-              <CardContent className="p-6">
-                {/* 아이콘 배경은 accent로 살짝 힘을 줌 */}
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-accent/15">
-                  <Icon className="h-6 w-6 text-accent" />
-                </div>
-                <h3 className="mb-2 text-xl font-semibold text-balance">
-                  {title}
-                </h3>
-                <p className="text-sm text-muted-foreground text-pretty">
-                  {desc}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      {/* 핵심: CTA는 더 밝게 분리해서 “마지막 행동 유도”가 보여야 함 */}
-      <section className="border-t border-border bg-secondary/60">
-        <div className="container mx-auto px-4 py-20">
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="mb-4 text-3xl font-bold text-balance md:text-4xl">
-              {t("cta.title")}
-            </h2>
-            <p className="mb-8 text-foreground/70 text-pretty">
-              {t("cta.subtitle")}
-            </p>
-            <Link href="/marketplace">
-              <Button
-                size="lg"
-                className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
-              >
-                {t("cta.viewMarketplace")}
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+            </Center>
+          </CTAWrap>
+        </Container>
+      </Section>
 
       {/* Footer */}
-      <footer className="border-t border-border">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-            <p className="text-sm text-muted-foreground">
-              {t("footer.testnet")}
-            </p>
-            <div className="flex gap-6">
-              <Link
-                href="#"
-                className="text-sm text-muted-foreground hover:text-foreground"
-              >
-                {t("footer.docs")}
-              </Link>
-              <Link
-                href="#"
-                className="text-sm text-muted-foreground hover:text-foreground"
-              >
-                {t("footer.github")}
-              </Link>
-              <Link
-                href="#"
-                className="text-sm text-muted-foreground hover:text-foreground"
-              >
-                {t("footer.discord")}
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
+      <Footer>
+        <Container>
+          <FooterWrap>
+            <FooterText>{t("footer.testnet")}</FooterText>
+            <FooterLinks>
+              <FooterLink href="#">{t("footer.docs")}</FooterLink>
+              <FooterLink href="#">{t("footer.github")}</FooterLink>
+              <FooterLink href="#">{t("footer.discord")}</FooterLink>
+            </FooterLinks>
+          </FooterWrap>
+        </Container>
+      </Footer>
+    </Page>
   );
 }
