@@ -1,126 +1,33 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Pretendard (install: pnpm add pretendard) */
+@import "pretendard/dist/web/static/pretendard.css";
+
+/* Tailwind v4: dark variant helper */
 @custom-variant dark (&:is(.dark *));
 
-/* ------------------------------------------------------------------
-   PAWNABLE Theme (Dark-first)
-   - Background: #0B0F12
-   - Surface/Card: #12181D
-   - Border: #1F2A33
-   - Primary (Deep Teal): #0E3B3B
-   - Accent (CTA Teal): #1FBFB8
-   - Text: #E6EDF3 / #9AA7B2 / #6B7785
-   - Destructive (Muted Red): #C65D5D
-------------------------------------------------------------------- */
-
-:root {
-  --background: #0b0f12;
-  --foreground: #e6edf3;
-
-  --card: #12181d;
-  --card-foreground: #e6edf3;
-
-  --popover: #12181d;
-  --popover-foreground: #e6edf3;
-
-  /* Primary = 브랜드(Deep Teal), Accent = CTA(밝은 Teal) */
-  --primary: #0e3b3b;
-  --primary-foreground: #e6edf3;
-
-  --secondary: #0f151a;
-  --secondary-foreground: #e6edf3;
-
-  --muted: #12181d;
-  --muted-foreground: #9aa7b2;
-
-  --accent: #1fbfb8;
-  --accent-foreground: #0b0f12;
-
-  /* Default/담보 귀속 등 “결과 통지”는 저채도 레드 */
-  --destructive: #c65d5d;
-  --destructive-foreground: #ffffff;
-
-  --border: #1f2a33;
-  --input: #1f2a33;
-  --ring: #1fbfb8;
-
-  /* Charts (의미 기반 권장) */
-  --chart-1: #1fbfb8; /* action */
-  --chart-2: #0e3b3b; /* brand */
-  --chart-3: #6fbf73; /* success-ish */
-  --chart-4: #f2b705; /* warning-ish */
-  --chart-5: #c65d5d; /* destructive-ish */
-
-  --radius: 0.5rem;
-
-  /* Sidebar (있을 경우 대비해서 일관되게) */
-  --sidebar: #0f151a;
-  --sidebar-foreground: #e6edf3;
-  --sidebar-primary: #1fbfb8;
-  --sidebar-primary-foreground: #0b0f12;
-  --sidebar-accent: #12181d;
-  --sidebar-accent-foreground: #e6edf3;
-  --sidebar-border: #1f2a33;
-  --sidebar-ring: #1fbfb8;
-}
-
-/* 현재는 Dark-first로 통일: .dark가 붙어도 동일하게 유지
-   (나중에 라이트 테마를 만들면 이 블록만 라이트 값으로 교체하면 됨) */
-.dark {
-  --background: #0b0f12;
-  --foreground: #e6edf3;
-
-  --card: #12181d;
-  --card-foreground: #e6edf3;
-
-  --popover: #12181d;
-  --popover-foreground: #e6edf3;
-
-  --primary: #0e3b3b;
-  --primary-foreground: #e6edf3;
-
-  --secondary: #0f151a;
-  --secondary-foreground: #e6edf3;
-
-  --muted: #12181d;
-  --muted-foreground: #9aa7b2;
-
-  --accent: #1fbfb8;
-  --accent-foreground: #0b0f12;
-
-  --destructive: #c65d5d;
-  --destructive-foreground: #ffffff;
-
-  --border: #1f2a33;
-  --input: #1f2a33;
-  --ring: #1fbfb8;
-
-  --chart-1: #1fbfb8;
-  --chart-2: #0e3b3b;
-  --chart-3: #6fbf73;
-  --chart-4: #f2b705;
-  --chart-5: #c65d5d;
-
-  --sidebar: #0f151a;
-  --sidebar-foreground: #e6edf3;
-  --sidebar-primary: #1fbfb8;
-  --sidebar-primary-foreground: #0b0f12;
-  --sidebar-accent: #12181d;
-  --sidebar-accent-foreground: #e6edf3;
-  --sidebar-border: #1f2a33;
-  --sidebar-ring: #1fbfb8;
-}
-
-/* Tailwind v4 theme mapping (프로젝트 기존 방식 유지) */
+/* Tailwind v4: keep build-time tokens + breakpoints here */
 @theme inline {
+  /* Breakpoints */
+  --breakpoint-sm: 30rem; /* 480px */
+  --breakpoint-md: 48rem; /* 768px */
+  --breakpoint-lg: 64rem; /* 1024px */
+  --breakpoint-xl: 80rem; /* 1280px */
+  --breakpoint-2xl: 96rem; /* 1536px */
+
+  /* Fonts */
+  --font-sans: "Pretendard", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Arial,
+    "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Semantic colors mapping (Tailwind utilities refer to these) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
-
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
@@ -129,10 +36,8 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
-
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -143,11 +48,12 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 6px);
 
+  /* Sidebar */
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -156,13 +62,4 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-}
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
 }
