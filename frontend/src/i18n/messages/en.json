@@ -16,6 +16,8 @@
   },
   "navbar": {
     "marketplace": "Marketplace",
+    "changeLanguage": "Change Language",
+    "connectWallet": "Connect Wallet",
     "dashboard": "Dashboard",
     "createLoan": "Create Loan"
   },

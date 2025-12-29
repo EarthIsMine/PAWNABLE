@@ -16,7 +16,6 @@
   },
   "navbar": {
     "marketplace": "마켓플레이스",
-    "changeLanguage": "언어 변경",
     "connectWallet": "지갑 연결",
     "dashboard": "대시보드",
     "createLoan": "대출 생성"
@@ -221,6 +220,12 @@
     "noMetaMask": "MetaMask가 설치되지 않았습니다",
     "installMetaMask": "MetaMask 설치",
     "error": "지갑 연결 오류",
-    "authError": "인증 실패"
+    "authError": "인증 실패",
+    "accountMenu": "계정 메뉴",
+    "copyAddress": "지갑 주소 복사",
+    "copied": "지갑 주소가 복사되었습니다",
+    "copyError": "주소 복사에 실패했습니다",
+    "connectedDesc": "지갑이 연결되었습니다",
+    "disconnectDesc": "지갑 연결이 해제되었습니다"
   }
 }
