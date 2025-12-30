@@ -63,7 +63,6 @@ export interface CreateAssetDto {
 export interface WalletAuthPayload {
   wallet_address: string;
   signature: string;
-  message: string;
   timestamp: number;
 }
 

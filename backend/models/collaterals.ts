@@ -2,6 +2,12 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { Loan } from './loanModel';
 import { Asset } from './assetModel';
 
+// Decimal 타입을 숫자로 변환하는 transformer
+const decimalTransformer = {
+  to: (value: number): string => value?.toString(),
+  from: (value: string): number => parseFloat(value),
+};
+
 @Entity('collaterals')
 export class Collateral {
   @PrimaryGeneratedColumn('uuid')
@@ -10,13 +16,13 @@ export class Collateral {
   @Column({ type: 'varchar', unique: true })
   collateral_id: string;
 
-  @Column({ type: 'decimal', precision: 18, scale: 8 })
+  @Column({ type: 'decimal', precision: 18, scale: 8, transformer: decimalTransformer })
   amount: number;
 
   @Column({ type: 'varchar', nullable: true })
   token_id: string;
 
-  @Column({ type: 'decimal', precision: 18, scale: 8 })
+  @Column({ type: 'decimal', precision: 18, scale: 8, transformer: decimalTransformer })
   locked_price: number;
 
   @CreateDateColumn()

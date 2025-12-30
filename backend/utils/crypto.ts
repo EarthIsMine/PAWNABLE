@@ -18,7 +18,7 @@ export class CryptoUtil {
    * 인증 메시지 생성
    */
   static generateAuthMessage(walletAddress: string, timestamp: number): string {
-    return `Welcome to PAWNABLE!\n\nSign this message to authenticate.\n\nWallet: ${walletAddress}\nTimestamp: ${timestamp}`;
+    return `PAWNABLE Auth - Wallet: ${walletAddress} Timestamp: ${timestamp}`;
   }
 
   /**

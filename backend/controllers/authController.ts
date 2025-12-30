@@ -38,8 +38,8 @@ export class AuthController {
     try {
       const payload: WalletAuthPayload = req.body;
 
-      if (!payload.wallet_address || !payload.signature || !payload.message || !payload.timestamp) {
-        return ResponseUtil.badRequest(res, 'Missing required fields');
+      if (!payload.wallet_address || !payload.signature || !payload.timestamp) {
+        return ResponseUtil.badRequest(res, 'Missing required fields: wallet_address, signature, timestamp');
       }
 
       const result = await this.authService.authenticateWallet(payload);
