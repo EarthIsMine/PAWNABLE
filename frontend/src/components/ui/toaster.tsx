@@ -1,6 +1,7 @@
 "use client";
 
-import { css } from "@emotion/react";
+import React from "react";
+import styled from "@emotion/styled";
 import { Toaster as SonnerToaster } from "sonner";
 
 type Props = {
@@ -16,7 +17,7 @@ type Props = {
   duration?: number;
 };
 
-const styles = css`
+const Wrap = styled.div`
   /* Sonner container */
   [data-sonner-toaster] {
     font-family: var(--font-sans);
@@ -106,7 +107,7 @@ export function Toaster({
   duration = 3500,
 }: Props) {
   return (
-    <div css={styles}>
+    <Wrap>
       <SonnerToaster
         position={position}
         richColors={richColors}
@@ -119,6 +120,6 @@ export function Toaster({
           },
         }}
       />
-    </div>
+    </Wrap>
   );
 }
