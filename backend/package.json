@@ -11,6 +11,7 @@
     "start": "tsx index.ts",
     "dev": "tsx watch index.ts",
     "seed": "tsx seed.ts",
+    "seed:test-users": "tsx seed-test-users.ts",
     "test:token": "tsx scripts/generate-test-token.ts"
   },
   "dependencies": {
