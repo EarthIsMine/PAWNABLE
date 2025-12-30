@@ -75,21 +75,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 1) Wallet connect (address 확보)
       const walletAddress = await walletService.connect();
 
-      // 2) 사용자 존재 확인 → 없으면 생성
-      try {
-        await userAPI.getByWallet(walletAddress);
-      } catch {
-        await userAPI.create({ wallet_address: walletAddress });
-      }
+      // 2) 타임스탬프 발급
+      const { timestamp } = await authAPI.getMessage(walletAddress);
 
-      // 3) 인증 메시지 발급
-      const { message, timestamp } = await authAPI.getMessage(walletAddress);
+      // 3) 클라이언트에서 메시지 생성 (서버와 동일한 형식)
+      const message = `PAWNABLE Auth - Wallet: ${walletAddress} Timestamp: ${timestamp}`;
 
       // 4) 서명
       const signature = await walletService.signMessage(message);
 
       // 5) 로그인 → 토큰 저장
-      const { token } = await authAPI.login(walletAddress, message, signature, timestamp);
+      const { token } = await authAPI.login(walletAddress, signature, timestamp);
       localStorage.setItem(TOKEN_KEY, token);
 
       // 6) 최종 사용자 정보 확정
