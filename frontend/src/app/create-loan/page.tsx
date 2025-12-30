@@ -1,221 +1,290 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Navbar } from "@/components/navbar"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useAuth } from "@/contexts/auth-context"
-import { loanAPI, assetAPI } from "@/lib/api"
-import { useToast } from "@/hooks/use-toast"
-import { Loader2, Plus, X } from "lucide-react"
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import styled from "@emotion/styled";
+import { useTranslations } from "next-intl";
+import { Loader2, Plus, X } from "lucide-react";
 
-interface Asset {
-  asset_id: string
-  symbol: string
-  name: string
-  blockchain: string
-  asset_type: string
-}
+import { Navbar } from "@/components/navbar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 
-interface CollateralInput {
-  asset_id: string
-  amount: string
+import { useAuth } from "@/contexts/auth-context";
+import { assetAPI, loanAPI, type Asset } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+
+type CollateralRow = {
+  asset_id: string;
+  amount: string; // input용
+  token_id?: string | null;
+};
+
+function isPositiveNumber(value: string) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0;
 }
 
 export default function CreateLoanPage() {
-  const router = useRouter()
-  const { user, isConnected } = useAuth()
-  const { toast } = useToast()
+  const router = useRouter();
+  const { user, isConnected, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
 
-  const [assets, setAssets] = useState<Asset[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const t = useTranslations("createLoan");
+  const tc = useTranslations("common");
 
-  // Form state
-  const [loanAssetId, setLoanAssetId] = useState("")
-  const [loanAmount, setLoanAmount] = useState("")
-  const [interestRate, setInterestRate] = useState("")
-  const [durationDays, setDurationDays] = useState("")
-  const [collaterals, setCollaterals] = useState<CollateralInput[]>([{ asset_id: "", amount: "" }])
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [isLoadingAssets, setIsLoadingAssets] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [loanAssetId, setLoanAssetId] = useState("");
+  const [loanAmount, setLoanAmount] = useState("");
+  const [interestRate, setInterestRate] = useState("");
+  const [durationDays, setDurationDays] = useState("");
+  const [collaterals, setCollaterals] = useState<CollateralRow[]>([{ asset_id: "", amount: "" }]);
+
+  const blocked = !authLoading && !isConnected;
 
   useEffect(() => {
-    if (!isConnected) {
-      router.push("/")
-      return
-    }
-    loadAssets()
-  }, [isConnected, router])
+    if (blocked) return;
+    void loadAssets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blocked]);
 
   const loadAssets = async () => {
     try {
-      const assetsData = await assetAPI.getAll()
-      setAssets(assetsData)
-    } catch (error) {
+      setIsLoadingAssets(true);
+      const data = await assetAPI.getAll();
+      setAssets(data);
+    } catch {
       toast({
-        title: "Error",
-        description: "Failed to load assets",
+        title: tc("error"),
+        description: t("toast.loadError", { defaultMessage: "자산 목록을 불러오지 못했습니다." }),
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoadingAssets(false);
     }
-  }
+  };
 
-  const addCollateral = () => {
-    setCollaterals([...collaterals, { asset_id: "", amount: "" }])
-  }
+  const loanAssets = useMemo(
+    () => assets.filter((a) => a.asset_type === "token" || a.asset_type === "stablecoin"),
+    [assets],
+  );
 
-  const removeCollateral = (index: number) => {
-    setCollaterals(collaterals.filter((_, i) => i !== index))
-  }
+  const collateralAssets = useMemo(
+    () => assets.filter((a) => a.asset_type === "token" || a.asset_type === "nft"),
+    [assets],
+  );
 
-  const updateCollateral = (index: number, field: keyof CollateralInput, value: string) => {
-    const updated = [...collaterals]
-    updated[index][field] = value
-    setCollaterals(updated)
-  }
+  const loanAssetOptions = useMemo(
+    () =>
+      loanAssets.map((a) => ({
+        value: a.asset_id,
+        label: `${a.symbol} - ${a.name}`,
+      })),
+    [loanAssets],
+  );
 
-  const calculateTotalRepayment = () => {
-    const principal = Number.parseFloat(loanAmount) || 0
-    const rate = Number.parseFloat(interestRate) || 0
-    return principal * (1 + rate / 100)
-  }
+  const collateralOptions = useMemo(
+    () =>
+      collateralAssets.map((a) => ({
+        value: a.asset_id,
+        label: `${a.symbol} - ${a.name}`,
+      })),
+    [collateralAssets],
+  );
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const totalRepayment = useMemo(() => {
+    const principal = Number(loanAmount) || 0;
+    const rate = Number(interestRate) || 0;
+    return principal * (1 + rate / 100);
+  }, [loanAmount, interestRate]);
 
+  const addCollateral = () => setCollaterals((prev) => [...prev, { asset_id: "", amount: "" }]);
+
+  const removeCollateral = (index: number) =>
+    setCollaterals((prev) => prev.filter((_, i) => i !== index));
+
+  const updateCollateral = (index: number, patch: Partial<CollateralRow>) =>
+    setCollaterals((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], ...patch };
+      return next;
+    });
+
+  const validate = () => {
     if (!user) {
       toast({
-        title: "Error",
-        description: "Please connect your wallet",
+        title: t("toast.connectWallet"),
+        description: t("toast.pleaseConnect"),
         variant: "destructive",
-      })
-      return
+      });
+      return false;
     }
 
-    // Validation
-    if (!loanAssetId || !loanAmount || !interestRate || !durationDays) {
+    if (
+      !loanAssetId ||
+      !isPositiveNumber(loanAmount) ||
+      !isPositiveNumber(interestRate) ||
+      !durationDays
+    ) {
       toast({
-        title: "Error",
-        description: "Please fill in all required fields",
+        title: tc("error"),
+        description: t("toast.fillRequired"),
         variant: "destructive",
-      })
-      return
+      });
+      return false;
     }
 
-    if (collaterals.some((c) => !c.asset_id || !c.amount)) {
+    const d = Number(durationDays);
+    if (!Number.isFinite(d) || d <= 0) {
       toast({
-        title: "Error",
-        description: "Please complete all collateral fields",
+        title: tc("error"),
+        description: t("toast.invalidDuration", {
+          defaultMessage: "대출 기간(일)을 올바르게 입력해주세요",
+        }),
         variant: "destructive",
-      })
-      return
+      });
+      return false;
     }
 
-    setIsSubmitting(true)
+    if (
+      collaterals.length === 0 ||
+      collaterals.some((c) => !c.asset_id || !isPositiveNumber(c.amount))
+    ) {
+      toast({
+        title: tc("error"),
+        description: t("toast.addCollateral"),
+        variant: "destructive",
+      });
+      return false;
+    }
 
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate() || !user) return;
+
+    setIsSubmitting(true);
     try {
-      const repayDueAt = new Date()
-      repayDueAt.setDate(repayDueAt.getDate() + Number.parseInt(durationDays))
+      const repayDueAt = new Date();
+      repayDueAt.setDate(repayDueAt.getDate() + Number(durationDays));
 
       await loanAPI.create({
         borrower_id: user.user_id,
         loan_asset_id: loanAssetId,
-        loan_amount: Number.parseFloat(loanAmount),
-        interest_rate_pct: Number.parseFloat(interestRate),
-        total_repay_amount: calculateTotalRepayment(),
+        loan_amount: Number(loanAmount),
+        interest_rate_pct: Number(interestRate),
+        total_repay_amount: totalRepayment,
         repay_due_at: repayDueAt.toISOString(),
         collaterals: collaterals.map((c) => ({
           asset_id: c.asset_id,
-          amount: Number.parseFloat(c.amount),
+          amount: Number(c.amount),
+          token_id: c.token_id ?? null,
         })),
-      })
+      });
 
       toast({
-        title: "Success",
-        description: "Loan request created successfully",
-      })
+        title: tc("success"),
+        description: t("toast.createSuccess"),
+      });
 
-      router.push("/dashboard")
-    } catch (error: any) {
+      router.push("/dashboard");
+    } catch (err: unknown) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to create loan",
+        title: tc("error"),
+        description: err instanceof Error ? err.message : t("toast.createError"),
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
-  if (isLoading) {
+  if (authLoading || isLoadingAssets) {
     return (
-      <div className="min-h-screen bg-background">
+      <Page>
         <Navbar />
-        <div className="container mx-auto flex min-h-[60vh] items-center justify-center px-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </div>
-    )
+        <Center>
+          <Loader2 />
+        </Center>
+      </Page>
+    );
   }
 
-  const loanAssets = assets.filter((a) => a.asset_type === "token" || a.asset_type === "stablecoin")
-  const collateralAssets = assets.filter((a) => a.asset_type === "token" || a.asset_type === "nft")
+  if (blocked) {
+    return (
+      <Page>
+        <Navbar />
+        <Container>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("toast.connectWallet")}</CardTitle>
+              <CardDescription>{t("toast.pleaseConnect")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Row>
+                <Button onClick={() => router.push("/")}>{tc("confirm")}</Button>
+              </Row>
+            </CardContent>
+          </Card>
+        </Container>
+      </Page>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background">
+    <Page>
       <Navbar />
 
-      <div className="container mx-auto max-w-3xl px-4 py-8">
-        <div className="mb-8">
-          <h1 className="mb-2 text-3xl font-bold text-balance">Create Loan Request</h1>
-          <p className="text-muted-foreground text-pretty">Set your own terms and find a lender in the marketplace</p>
-        </div>
+      <Container>
+        <Header>
+          <Title>{t("title")}</Title>
+          <Subtitle>{t("subtitle")}</Subtitle>
+        </Header>
 
         <form onSubmit={handleSubmit}>
           <Card>
             <CardHeader>
-              <CardTitle>Loan Details</CardTitle>
-              <CardDescription>Specify how much you want to borrow and at what rate</CardDescription>
+              <CardTitle>{t("form.loanDetails")}</CardTitle>
+              <CardDescription>{t("form.summary")}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-6 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="loan-asset">Loan Asset</Label>
-                  <Select value={loanAssetId} onValueChange={setLoanAssetId}>
-                    <SelectTrigger id="loan-asset">
-                      <SelectValue placeholder="Select asset" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {loanAssets.map((asset) => (
-                        <SelectItem key={asset.asset_id} value={asset.asset_id}>
-                          {asset.symbol} - {asset.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="loan-amount">Loan Amount</Label>
+            <CardContent>
+              <Grid2>
+                <Field>
+                  <Label htmlFor="loan-asset">{t("form.asset")}</Label>
+                  <Select
+                    id="loan-asset"
+                    value={loanAssetId}
+                    onValueChange={setLoanAssetId}
+                    placeholder={t("form.selectAsset")}
+                    options={loanAssetOptions}
+                  />
+                </Field>
+
+                <Field>
+                  <Label htmlFor="loan-amount">{t("form.amount")}</Label>
                   <Input
                     id="loan-amount"
                     type="number"
-                    step="0.01"
-                    placeholder="1000"
+                    step="0.0001"
+                    placeholder={t("form.enterAmount")}
                     value={loanAmount}
                     onChange={(e) => setLoanAmount(e.target.value)}
                   />
-                </div>
+                </Field>
 
-                <div className="space-y-2">
-                  <Label htmlFor="interest-rate">Interest Rate (%)</Label>
+                <Field>
+                  <Label htmlFor="interest-rate">{t("form.interestRate")}</Label>
                   <Input
                     id="interest-rate"
                     type="number"
@@ -224,10 +293,10 @@ export default function CreateLoanPage() {
                     value={interestRate}
                     onChange={(e) => setInterestRate(e.target.value)}
                   />
-                </div>
+                </Field>
 
-                <div className="space-y-2">
-                  <Label htmlFor="duration">Duration (Days)</Label>
+                <Field>
+                  <Label htmlFor="duration">{t("form.duration")}</Label>
                   <Input
                     id="duration"
                     type="number"
@@ -235,95 +304,246 @@ export default function CreateLoanPage() {
                     value={durationDays}
                     onChange={(e) => setDurationDays(e.target.value)}
                   />
-                </div>
-              </div>
+                </Field>
+              </Grid2>
 
-              {loanAmount && interestRate && (
-                <div className="rounded-lg bg-muted/50 p-4">
-                  <div className="text-sm text-muted-foreground">Total Repayment Amount</div>
-                  <div className="text-2xl font-bold text-primary">{calculateTotalRepayment().toFixed(2)}</div>
-                </div>
+              {(loanAmount || interestRate) && (
+                <SummaryBox>
+                  <SummaryLabel>{t("form.totalRepayment")}</SummaryLabel>
+                  <SummaryValue>
+                    {Number.isFinite(totalRepayment) ? totalRepayment.toFixed(2) : "-"}
+                  </SummaryValue>
+                </SummaryBox>
               )}
             </CardContent>
           </Card>
 
-          <Card className="mt-6">
+          <Spacer />
+
+          <Card>
             <CardHeader>
-              <CardTitle>Collateral</CardTitle>
-              <CardDescription>Add assets you'll use as collateral for this loan</CardDescription>
+              <CardTitle>{t("form.collateralInfo")}</CardTitle>
+              <CardDescription>{t("form.addCollateral")}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {collaterals.map((collateral, index) => (
-                <div key={index} className="flex gap-4">
-                  <div className="flex-1 space-y-2">
-                    <Label htmlFor={`collateral-asset-${index}`}>Asset</Label>
-                    <Select
-                      value={collateral.asset_id}
-                      onValueChange={(value) => updateCollateral(index, "asset_id", value)}
-                    >
-                      <SelectTrigger id={`collateral-asset-${index}`}>
-                        <SelectValue placeholder="Select asset" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {collateralAssets.map((asset) => (
-                          <SelectItem key={asset.asset_id} value={asset.asset_id}>
-                            {asset.symbol} - {asset.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
 
-                  <div className="flex-1 space-y-2">
-                    <Label htmlFor={`collateral-amount-${index}`}>Amount</Label>
-                    <Input
-                      id={`collateral-amount-${index}`}
-                      type="number"
-                      step="0.01"
-                      placeholder="1.0"
-                      value={collateral.amount}
-                      onChange={(e) => updateCollateral(index, "amount", e.target.value)}
-                    />
-                  </div>
+            <CardContent>
+              <Stack>
+                {collaterals.map((c, index) => (
+                  <CollateralRowWrap key={index}>
+                    <Field>
+                      <Label htmlFor={`collateral-asset-${index}`}>
+                        {t("form.collateralAsset")}
+                      </Label>
+                      <Select
+                        id={`collateral-asset-${index}`}
+                        value={c.asset_id}
+                        onValueChange={(v) => updateCollateral(index, { asset_id: v })}
+                        placeholder={t("form.selectAsset")}
+                        options={collateralOptions}
+                      />
+                    </Field>
 
-                  {collaterals.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="mt-8"
-                      onClick={() => removeCollateral(index)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
+                    <Field>
+                      <Label htmlFor={`collateral-amount-${index}`}>
+                        {t("form.collateralAmount")}
+                      </Label>
+                      <Input
+                        id={`collateral-amount-${index}`}
+                        type="number"
+                        step="0.0001"
+                        placeholder="1.0"
+                        value={c.amount}
+                        onChange={(e) => updateCollateral(index, { amount: e.target.value })}
+                      />
+                    </Field>
 
-              <Button type="button" variant="outline" onClick={addCollateral} className="w-full bg-transparent">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Collateral
-              </Button>
+                    {collaterals.length > 1 ? (
+                      <IconButton
+                        type="button"
+                        aria-label={t("form.removeCollateral")}
+                        onClick={() => removeCollateral(index)}
+                      >
+                        <X width={16} height={16} />
+                      </IconButton>
+                    ) : null}
+                  </CollateralRowWrap>
+                ))}
+
+                <Button type="button" variant="outline" onClick={addCollateral}>
+                  <Plus width={16} height={16} />
+                  {t("form.addCollateral")}
+                </Button>
+              </Stack>
             </CardContent>
           </Card>
 
-          <div className="mt-6 flex justify-end gap-4">
+          <Actions>
             <Button type="button" variant="outline" onClick={() => router.back()}>
-              Cancel
+              {tc("cancel")}
             </Button>
+
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
+                  <Loader2 />
+                  {t("form.creating", { defaultMessage: "생성 중..." })}
                 </>
               ) : (
-                "Create Loan Request"
+                t("form.createRequest")
               )}
             </Button>
-          </div>
+          </Actions>
         </form>
-      </div>
-    </div>
-  )
+      </Container>
+    </Page>
+  );
 }
+
+/* styles */
+
+const Page = styled.div`
+  min-height: 100dvh;
+  background: var(--background);
+  color: var(--foreground);
+`;
+
+const Container = styled.div`
+  width: 100%;
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 24px 16px;
+`;
+
+const Header = styled.div`
+  margin-bottom: 20px;
+`;
+
+const Title = styled.h1`
+  margin: 0 0 8px;
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: 0.005em;
+  font-weight: 800;
+`;
+
+const Subtitle = styled.p`
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: -0.015em;
+  color: var(--muted-foreground);
+`;
+
+const Grid2 = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+
+  @media (min-width: 768px) {
+    grid-template-columns: 1fr 1fr;
+  }
+`;
+
+const Field = styled.div`
+  display: grid;
+  gap: 8px;
+`;
+
+const SummaryBox = styled.div`
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 3px);
+  background: color-mix(in oklab, var(--card) 55%, transparent);
+`;
+
+const SummaryLabel = styled.div`
+  font-size: 13px;
+  color: var(--muted-foreground);
+`;
+
+const SummaryValue = styled.div`
+  margin-top: 6px;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.005em;
+`;
+
+const Spacer = styled.div`
+  height: 16px;
+`;
+
+const Stack = styled.div`
+  display: grid;
+  gap: 12px;
+`;
+
+const CollateralRowWrap = styled.div`
+  display: grid;
+  gap: 12px;
+  align-items: end;
+
+  @media (min-width: 768px) {
+    grid-template-columns: 1fr 1fr auto;
+  }
+`;
+
+const IconButton = styled.button`
+  height: 40px;
+  width: 40px;
+  border-radius: calc(var(--radius) - 6px);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted-foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+
+  &:hover {
+    background: color-mix(in oklab, var(--card) 70%, transparent);
+    color: var(--foreground);
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 30%, transparent);
+  }
+`;
+
+const Actions = styled.div`
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+`;
+
+const Center = styled.div`
+  min-height: 60vh;
+  display: grid;
+  place-items: center;
+
+  svg {
+    animation: spin 900ms linear infinite;
+    color: var(--foreground);
+    opacity: 0.9;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`;
+
+const Row = styled.div`
+  display: flex;
+  gap: 10px;
+`;
