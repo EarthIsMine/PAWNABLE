@@ -1,82 +1,64 @@
+"use client";
+
+import * as React from "react";
 import styled from "@emotion/styled";
 
-type Variant =
-  | "default"
-  | "accent"
-  | "secondary"
-  | "outline"
-  | "success"
-  | "warning"
-  | "error"
-  | "info";
+export type BadgeVariant = "default" | "secondary" | "accent" | "destructive" | "outline";
 
 export type BadgeProps = React.HTMLAttributes<HTMLSpanElement> & {
-  variant?: Variant;
+  variant?: BadgeVariant;
 };
 
-const stylesByVariant: Record<Variant, string> = {
-  default: `
-    background: color-mix(in oklab, var(--card) 70%, transparent);
-    color: var(--foreground);
-    border: 1px solid var(--border);
-  `,
-  accent: `
-    background: color-mix(in oklab, var(--accent) 16%, transparent);
-    color: var(--accent);
-    border: 1px solid color-mix(in oklab, var(--accent) 40%, var(--border));
-  `,
-  secondary: `
-    background: color-mix(in oklab, var(--secondary) 16%, transparent);
-    color: var(--foreground);
-    border: 1px solid color-mix(in oklab, var(--secondary) 40%, var(--border));
-  `,
-  outline: `
-    background: transparent;
-    color: var(--muted-foreground);
-    border: 1px solid var(--border);
-  `,
-  success: `
-    background: color-mix(in oklab, var(--success) 16%, transparent);
-    color: var(--foreground);
-    border: 1px solid color-mix(in oklab, var(--success) 45%, var(--border));
-  `,
-  warning: `
-    background: color-mix(in oklab, var(--warning) 18%, transparent);
-    color: var(--foreground);
-    border: 1px solid color-mix(in oklab, var(--warning) 55%, var(--border));
-  `,
-  error: `
-    background: color-mix(in oklab, var(--error) 16%, transparent);
-    color: var(--foreground);
-    border: 1px solid color-mix(in oklab, var(--error) 50%, var(--border));
-  `,
-  info: `
-    background: color-mix(in oklab, var(--info) 16%, transparent);
-    color: var(--foreground);
-    border: 1px solid color-mix(in oklab, var(--info) 45%, var(--border));
-  `,
-};
+export function Badge({ variant = "default", className, ...props }: BadgeProps) {
+  return <BadgeRoot data-variant={variant} className={className} {...props} />;
+}
 
-export const Badge = styled.span<Required<Pick<BadgeProps, "variant">>>`
+/* styles */
+
+const BadgeRoot = styled.span`
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
 
-  padding: 6px 10px;
-  border-radius: 999px;
+  border-radius: calc(var(--radius) - 6px);
+  border: 1px solid var(--border);
+
+  padding: 2px 8px;
 
   font-size: 12px;
-  line-height: 1;
-  letter-spacing: -0.015em;
   font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
 
   white-space: nowrap;
-  user-select: none;
 
-  ${({ variant }) => stylesByVariant[variant]}
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+
+  /* Default */
+  background: var(--card);
+  color: var(--card-foreground);
+
+  &[data-variant="secondary"] {
+    background: var(--secondary);
+    color: var(--secondary-foreground);
+  }
+
+  &[data-variant="accent"] {
+    background: color-mix(in oklab, var(--accent) 18%, var(--card));
+    border-color: color-mix(in oklab, var(--accent) 35%, var(--border));
+    color: var(--foreground);
+  }
+
+  &[data-variant="destructive"] {
+    background: color-mix(in oklab, var(--destructive) 16%, var(--card));
+    border-color: color-mix(in oklab, var(--destructive) 45%, var(--border));
+    color: var(--foreground);
+  }
+
+  &[data-variant="outline"] {
+    background: transparent;
+    color: var(--foreground);
+  }
 `;
-
-Badge.defaultProps = {
-  variant: "default",
-};
