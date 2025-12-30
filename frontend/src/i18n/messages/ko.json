@@ -12,14 +12,32 @@
     "save": "저장",
     "edit": "수정",
     "delete": "삭제",
-    "view": "보기"
+    "view": "보기",
+    "ok": "확인",
+    "back": "뒤로",
+    "retry": "다시 시도",
+    "notAvailable": "사용할 수 없음"
   },
+
   "navbar": {
     "marketplace": "마켓플레이스",
     "connectWallet": "지갑 연결",
     "dashboard": "대시보드",
-    "createLoan": "대출 생성"
+    "createLoan": "대출 생성",
+    "changeLanguage": "언어 변경",
+    "menu": "메뉴",
+    "accountMenu": "계정 메뉴",
+    "goToDashboard": "대시보드로 이동",
+    "disconnect": "연결 해제"
   },
+
+  "locale": {
+    "changeLanguage": "언어 변경",
+    "current": "현재 언어",
+    "ko": "한국어",
+    "en": "English"
+  },
+
   "home": {
     "badge": "P2P 암호화폐 대출",
     "title": "중개자 없는 금융",
@@ -68,6 +86,7 @@
       "discord": "Discord"
     }
   },
+
   "marketplace": {
     "title": "대출 마켓플레이스",
     "subtitle": "사용 가능한 대출 요청을 탐색하고 이자를 받으며 대출하세요",
@@ -95,6 +114,7 @@
       "description": "첫 번째로 대출 요청을 생성하세요",
       "button": "대출 요청 생성"
     },
+
     "card": {
       "interest": "이자율",
       "totalRepayment": "총 상환액",
@@ -110,6 +130,7 @@
       "totalRepay": "총 상환액",
       "walletRequired": "대출하려면 지갑 연결"
     },
+
     "toast": {
       "connectWallet": "지갑 연결",
       "pleaseConnect": "대출하려면 지갑을 연결해주세요",
@@ -118,6 +139,7 @@
       "loadError": "마켓플레이스 데이터 로드 실패"
     }
   },
+
   "createLoan": {
     "title": "대출 요청 생성",
     "subtitle": "조건을 설정하고 담보를 추가하여 새로운 대출 요청을 생성하세요",
@@ -145,40 +167,133 @@
       "fillRequired": "필수 항목을 모두 입력해주세요",
       "addCollateral": "담보를 하나 이상 추가해주세요",
       "createSuccess": "대출 요청이 성공적으로 생성되었습니다!",
-      "createError": "대출 요청 생성 실패"
+      "createError": "대출 요청 생성 실패",
+
+      "loadAssetsError": "자산 목록을 불러오지 못했어요.",
+      "connectWalletRequiredTitle": "지갑 연결이 필요해요",
+      "connectWalletRequiredDescription": "계속하려면 지갑을 연결해 주세요.",
+      "created": "대출 요청이 생성되었습니다.",
+      "createFailed": "대출 요청 생성에 실패했습니다.",
+      "submitting": "생성 중…"
+    },
+
+    "card": {
+      "loanDetailsTitle": "대출 정보",
+      "loanDetailsDesc": "얼마를, 어떤 조건으로 빌릴지 입력하세요",
+      "collateralTitle": "담보",
+      "collateralDesc": "이 대출에 사용할 담보 자산을 추가하세요"
+    },
+
+    "summary": {
+      "totalRepaymentLabel": "총 상환 금액"
+    },
+
+    "actions": {
+      "addCollateral": "담보 추가",
+      "cancel": "취소",
+      "submit": "대출 요청 생성",
+      "submitting": "생성 중…"
     }
   },
+
   "dashboard": {
     "title": "내 대출",
+
+    "welcome": "{name}님, 다시 오셨네요",
+    "unknownAsset": "알 수 없는 자산",
+
+    "cta": {
+      "newLoan": "새 대출 요청"
+    },
+
+    "toast": {
+      "loadError": "대시보드 데이터를 불러오지 못했어요."
+    },
+
     "tabs": {
       "borrowed": "빌린 대출",
       "lent": "빌려준 대출"
     },
+
+    "section": {
+      "loans": "대출 현황"
+    },
+
+    "kpi": {
+      "borrowedActive": {
+        "title": "진행 중인 대출 (차입)"
+      },
+      "lentActive": {
+        "title": "진행 중인 대출 (대여)"
+      },
+      "pending": "{count}건 대기 중",
+
+      "totalBorrowed": {
+        "title": "총 차입 금액",
+        "hint": "USDT 환산 기준"
+      },
+      "totalLent": {
+        "title": "총 대여 금액",
+        "hint": "USDT 환산 기준"
+      }
+    },
+
     "noLoans": {
       "borrowed": {
         "title": "빌린 대출이 없습니다",
-        "description": "대출 요청을 생성하여 시작하세요"
+        "description": "대출 요청을 생성하여 시작하세요",
+        "button": "대출 요청 만들기"
       },
       "lent": {
         "title": "빌려준 대출이 없습니다",
-        "description": "마켓플레이스에서 대출 요청을 탐색하세요"
+        "description": "마켓플레이스에서 대출 요청을 탐색하세요",
+        "button": "마켓플레이스 둘러보기"
       }
     },
+
     "status": {
       "created": "생성됨",
       "matched": "매칭됨",
       "active": "활성",
       "repaid": "상환됨",
-      "liquidated": "청산됨"
+      "liquidated": "청산됨",
+      "pending": "대기 중",
+      "cancelled": "취소됨"
     },
+
     "card": {
       "interest": "이자율",
       "repayment": "상환액",
       "due": "만기",
       "collateral": "담보",
+      "viewDetails": "상세 보기",
+      "totalRepayment": "총 상환 금액",
+      "dueDate": "상환 기한",
+      "viewDetails2": "상세 보기"
+    },
+
+    "empty": {
+      "borrowed": {
+        "title": "빌린 대출이 없어요",
+        "description": "대출 요청을 만들어 시작해 보세요",
+        "button": "대출 요청 만들기"
+      },
+      "lent": {
+        "title": "빌려준 대출이 없어요",
+        "description": "마켓플레이스를 둘러보고 대출을 시작해 보세요",
+        "button": "마켓플레이스 둘러보기"
+      }
+    },
+
+    "loan": {
+      "interest": "이자율",
+      "totalRepayment": "총 상환 금액",
+      "dueDate": "상환 기한",
+      "collateral": "담보",
       "viewDetails": "상세 보기"
     }
   },
+
   "loanDetail": {
     "loading": "대출 정보 로딩 중...",
     "notFound": "대출을 찾을 수 없습니다",
@@ -201,7 +316,17 @@
       "liquidate": "담보 청산",
       "activateDesc": "대출을 활성화하고 자금을 이체합니다",
       "repayDesc": "대출을 상환하고 담보를 회수합니다",
-      "liquidateDesc": "만기일이 지난 대출의 담보를 청산합니다"
+      "liquidateDesc": "만기일이 지난 대출의 담보를 청산합니다",
+
+      "cancelLoan": "대출 취소",
+      "match": "매칭",
+      "cancelLoanDesc": "대출을 취소합니다"
+    },
+    "dialog": {
+      "title": "정말 진행할까요?",
+      "description": "이 작업은 되돌릴 수 없을 수 있어요.",
+      "confirm": "진행",
+      "cancel": "취소"
     },
     "toast": {
       "activateSuccess": "대출이 성공적으로 활성화되었습니다!",
@@ -212,6 +337,7 @@
       "liquidateError": "담보 청산 실패"
     }
   },
+
   "wallet": {
     "connect": "지갑 연결",
     "connecting": "연결 중...",
@@ -226,6 +352,22 @@
     "copied": "지갑 주소가 복사되었습니다",
     "copyError": "주소 복사에 실패했습니다",
     "connectedDesc": "지갑이 연결되었습니다",
-    "disconnectDesc": "지갑 연결이 해제되었습니다"
+    "disconnectDesc": "지갑 연결이 해제되었습니다",
+
+    "connectedTitle": "지갑이 연결됐어요",
+    "connectedDescription": "지갑 연결이 완료되었습니다.",
+    "disconnectedTitle": "연결이 해제됐어요",
+    "disconnectedDescription": "지갑 연결이 해제되었습니다.",
+    "errorTitle": "지갑 연결 실패",
+    "unknownError": "알 수 없는 오류가 발생했습니다."
+  },
+
+  "toast": {
+    "connectWalletRequiredTitle": "지갑 연결이 필요해요",
+    "connectWalletRequiredDescription": "계속하려면 지갑을 연결해 주세요.",
+    "loadFailedTitle": "불러오기 실패",
+    "loadFailedDescription": "데이터를 불러오지 못했습니다.",
+    "actionFailedTitle": "요청 실패",
+    "actionFailedDescription": "잠시 후 다시 시도해 주세요."
   }
 }
