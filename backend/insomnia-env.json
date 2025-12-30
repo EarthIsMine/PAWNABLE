@@ -1,0 +1,21 @@
+{
+  "base_url": "http://yt4307.mooo.com:8085",
+  "api_url": "http://yt4307.mooo.com:8085/api",
+  "test_user_1_id": "test-user-001",
+  "test_user_1_wallet": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "test_user_1_private_key": "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+  "test_user_1_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoidGVzdC11c2VyLTAwMSIsIndhbGxldF9hZGRyZXNzIjoiMHhmMzlGZDZlNTFhYWQ4OEY2RjRjZTZhQjg4MjcyNzljZmZGYjkyMjY2IiwiaWF0IjoxNzY3MDIxODg0LCJleHAiOjE3Njc2MjY2ODR9.fW6yjs5YLsiqIQ5Pq4kmh4GvRk72mpDRKDQV3JkLucw",
+  "test_user_1_timestamp": 1767021884616,
+  "test_user_1_signature": "0x55bf76f846238acfcf2ead6d4f74c463a8661bfc9a8a8748fe8c92e040f4d13a0f418076fd3232034f2130092141b70bfdd19b443b99160f08135e4408b84c391b",
+  "test_user_2_id": "test-user-002",
+  "test_user_2_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+  "test_user_2_private_key": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+  "test_user_2_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoidGVzdC11c2VyLTAwMiIsIndhbGxldF9hZGRyZXNzIjoiMHg3MDk5Nzk3MEM1MTgxMmRjM0EwMTBDN2QwMWI1MGUwZDE3ZGM3OUM4IiwiaWF0IjoxNzY3MDIxODg0LCJleHAiOjE3Njc2MjY2ODR9.F56dBIzSo6f_2ScwsrJd1LWiHll6-0As1Tc1MjMDeV0",
+  "test_user_2_timestamp": 1767021884616,
+  "test_user_2_signature": "0x36c1eda4a3c49550afd2721a3dffc2dd18088b3eba6946069e6e6c1482bc2d891e369e975f9fd174c833091d9b6c30d03381d0fc3a3f4668862b76c9dbf4ccc81b",
+  "user_id": "test-user-001",
+  "wallet_address": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoidGVzdC11c2VyLTAwMSIsIndhbGxldF9hZGRyZXNzIjoiMHhmMzlGZDZlNTFhYWQ4OEY2RjRjZTZhQjg4MjcyNzljZmZGYjkyMjY2IiwiaWF0IjoxNzY3MDIxODg0LCJleHAiOjE3Njc2MjY2ODR9.fW6yjs5YLsiqIQ5Pq4kmh4GvRk72mpDRKDQV3JkLucw",
+  "asset_id": "16f765d3-fad0-4da2-a811-29b0a7a80faa",
+  "loan_id": "test-loan-001"
+}

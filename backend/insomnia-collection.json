@@ -20,9 +20,23 @@
       "data": {
         "base_url": "http://yt4307.mooo.com:8085",
         "api_url": "http://yt4307.mooo.com:8085/api",
-        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoidGVzdC11c2VyLTAwMSIsIndhbGxldF9hZGRyZXNzIjoiMHg3NDJkMzVDYzY2MzRDMDUzMjkyNWEzYjg0NEJjOWU3NTk1ZjBiRWIiLCJpYXQiOjE3NjY5OTU1MDIsImV4cCI6MTc2NzYwMDMwMn0.HnetMngYPzo1HXL83LFRGEGG_G803Q9RIexA370ZWh0",
+        "test_user_1_id": "test-user-001",
+        "test_user_1_wallet": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        "test_user_1_private_key": "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+        "test_user_1_token": "RUN_npm_run_seed:test-users_TO_GENERATE",
+        "test_user_1_message": "RUN_npm_run_seed:test-users_TO_GENERATE",
+        "test_user_1_timestamp": 0,
+        "test_user_1_signature": "RUN_npm_run_seed:test-users_TO_GENERATE",
+        "test_user_2_id": "test-user-002",
+        "test_user_2_wallet": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "test_user_2_private_key": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+        "test_user_2_token": "RUN_npm_run_seed:test-users_TO_GENERATE",
+        "test_user_2_message": "RUN_npm_run_seed:test-users_TO_GENERATE",
+        "test_user_2_timestamp": 0,
+        "test_user_2_signature": "RUN_npm_run_seed:test-users_TO_GENERATE",
         "user_id": "test-user-001",
-        "wallet_address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+        "wallet_address": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        "token": "RUN_npm_run_seed:test-users_TO_GENERATE",
         "loan_id": "placeholder-loan-id",
         "asset_id": "placeholder-asset-id"
       },
@@ -30,9 +44,23 @@
         "&": [
           "base_url",
           "api_url",
-          "token",
+          "test_user_1_id",
+          "test_user_1_wallet",
+          "test_user_1_private_key",
+          "test_user_1_token",
+          "test_user_1_message",
+          "test_user_1_timestamp",
+          "test_user_1_signature",
+          "test_user_2_id",
+          "test_user_2_wallet",
+          "test_user_2_private_key",
+          "test_user_2_token",
+          "test_user_2_message",
+          "test_user_2_timestamp",
+          "test_user_2_signature",
           "user_id",
           "wallet_address",
+          "token",
           "loan_id",
           "asset_id"
         ]
@@ -112,16 +140,60 @@
       "metaSortKey": -900
     },
     {
-      "_id": "req_auth_login",
+      "_id": "req_auth_login_test_user_1",
       "parentId": "fld_auth",
       "_type": "request",
-      "name": "2. Login (Need Signature)",
-      "description": "Login with signed message (requires real wallet signature)",
+      "name": "2a. Login - Test User 1 (Auto)",
+      "description": "Quick login with Test User 1 using pre-generated signature.\n\nRun 'pnpm --filter @pawnable/backend seed:test-users' to generate fresh signatures (valid for 1 hour).\n\nThis user's credentials are automatically populated from environment variables.",
       "url": "{{ _.api_url }}/auth/login",
       "method": "POST",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"wallet_address\": \"{{ _.wallet_address }}\",\n  \"message\": \"Welcome to PAWNABLE!\\n\\nSign this message to authenticate.\\n\\nWallet: {{ _.wallet_address }}\\nTimestamp: 1735430400000\",\n  \"signature\": \"0x_REPLACE_WITH_REAL_SIGNATURE\",\n  \"timestamp\": 1735430400000\n}"
+        "text": "{\n  \"wallet_address\": \"{{ _.test_user_1_wallet }}\",\n  \"message\": \"{{ _.test_user_1_message }}\",\n  \"signature\": \"{{ _.test_user_1_signature }}\",\n  \"timestamp\": {{ _.test_user_1_timestamp }}\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -895
+    },
+    {
+      "_id": "req_auth_login_test_user_2",
+      "parentId": "fld_auth",
+      "_type": "request",
+      "name": "2b. Login - Test User 2 (Auto)",
+      "description": "Quick login with Test User 2 using pre-generated signature.\n\nRun 'pnpm --filter @pawnable/backend seed:test-users' to generate fresh signatures (valid for 1 hour).\n\nThis user's credentials are automatically populated from environment variables.",
+      "url": "{{ _.api_url }}/auth/login",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"wallet_address\": \"{{ _.test_user_2_wallet }}\",\n  \"message\": \"{{ _.test_user_2_message }}\",\n  \"signature\": \"{{ _.test_user_2_signature }}\",\n  \"timestamp\": {{ _.test_user_2_timestamp }}\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -892
+    },
+    {
+      "_id": "req_auth_login",
+      "parentId": "fld_auth",
+      "_type": "request",
+      "name": "2c. Login (Manual)",
+      "description": "IMPORTANT: Before using this endpoint:\n1. Call '1. Get Auth Message' first to get fresh message & timestamp\n2. Sign the message with your wallet (MetaMask or ethers.js)\n3. Replace the values below with the response from step 1 and your signature\n\nThe timestamp expires after 1 hour!",
+      "url": "{{ _.api_url }}/auth/login",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"wallet_address\": \"{{ _.wallet_address }}\",\n  \"message\": \"REPLACE_WITH_MESSAGE_FROM_STEP_1\",\n  \"signature\": \"REPLACE_WITH_WALLET_SIGNATURE\",\n  \"timestamp\": 0\n}"
       },
       "parameters": [],
       "headers": [
