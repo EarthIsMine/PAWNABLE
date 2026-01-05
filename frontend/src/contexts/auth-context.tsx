@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { authAPI, userAPI } from "@/lib/api";
 import { walletService } from "@/lib/wallet";
+import { contractService } from "@/lib/contracts";
 
 export interface User {
   user_id: string;
@@ -92,6 +93,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const me = await userAPI.getMe();
       setUser(me);
       setIsConnected(true);
+
+      // 7) Initialize smart contracts
+      try {
+        await contractService.initialize();
+        console.log("Smart contracts initialized");
+      } catch (error) {
+        console.warn("Contract initialization failed:", error);
+        // Don't throw - user can still use the app without contracts
+      }
     } catch (error: unknown) {
       console.error("Connection failed:", error);
 
