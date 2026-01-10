@@ -1,6 +1,6 @@
 {
   "common": {
-    "connect": "Connect",
+    "connect": "Connect wallet",
     "connected": "Connected",
     "disconnect": "Disconnect",
     "loading": "Loading...",
@@ -12,189 +12,442 @@
     "save": "Save",
     "edit": "Edit",
     "delete": "Delete",
-    "view": "View"
+    "view": "View",
+    "ok": "OK",
+    "back": "Back",
+    "retry": "Retry",
+    "notAvailable": "Not available"
   },
+
   "navbar": {
     "marketplace": "Marketplace",
-    "changeLanguage": "Change Language",
-    "connectWallet": "Connect Wallet",
+    "connectWallet": "Connect wallet",
     "dashboard": "Dashboard",
-    "createLoan": "Create Loan"
+    "createLoan": "Create loan",
+    "changeLanguage": "Change language",
+    "menu": "Menu",
+    "accountMenu": "Account menu",
+    "goToDashboard": "Go to dashboard",
+    "disconnect": "Disconnect"
   },
+
+  "locale": {
+    "changeLanguage": "Change language",
+    "current": "Current language",
+    "ko": "Korean",
+    "en": "English"
+  },
+
   "home": {
-    "badge": "Peer-to-Peer Crypto Lending",
-    "title": "Finance without the middleman",
-    "subtitle": "The self-custody platform that brings the best of DeFi directly to you. Set your own rates, use crypto as collateral, and lend peer-to-peer.",
-    "exploreMarketplace": "Explore Marketplace",
-    "createLoanRequest": "Create Loan Request",
+    "badge": "P2P Crypto Lending",
+    "title": "Finance without intermediaries",
+    "subtitle": "Experience DeFi directly. Set your own rate, use crypto as collateral, and lend peer-to-peer.",
+    "exploreMarketplace": "Explore marketplace",
+    "createLoanRequest": "Create loan request",
     "stats": {
-      "platformFee": "Platform Fee",
-      "directMatching": "Direct Matching",
+      "platformFee": "Platform fee",
+      "directMatching": "Direct matching",
       "flexible": "Flexible",
-      "yourRates": "Your Interest Rates",
+      "yourRates": "Your rates",
       "secure": "Secure",
-      "smartContracts": "Smart Contracts"
+      "smartContracts": "Smart contracts"
     },
     "howItWorks": {
-      "title": "How PAWNABLE Works",
-      "subtitle": "A revolutionary approach to crypto-backed lending with complete transparency and control",
+      "title": "How PAWNABLE works",
+      "subtitle": "A new way of crypto-collateral loans with full transparency and control",
       "features": {
         "setTerms": {
-          "title": "Set Your Terms",
-          "description": "Borrowers propose their own interest rates and loan terms. No algorithmic rates."
+          "title": "Set terms",
+          "description": "Borrowers propose interest rates and terms directly. No algorithmic pricing."
         },
         "collateral": {
-          "title": "Crypto Collateral",
-          "description": "Use ETH, SOL, or even NFTs as collateral. Your assets stay secure on-chain."
+          "title": "Crypto collateral",
+          "description": "Use ETH, SOL, or NFTs as collateral. Assets are held safely on-chain."
         },
         "deadlines": {
-          "title": "Fixed Deadlines",
-          "description": "Clear repayment deadlines. No price-based liquidations, only time-based terms."
+          "title": "Fixed deadlines",
+          "description": "Clear repayment deadlines. Time-based terms only—no price-trigger liquidations."
         },
         "matching": {
-          "title": "Quick Matching",
-          "description": "Connect directly with lenders in our marketplace. Fast, transparent, peer-to-peer."
+          "title": "Fast matching",
+          "description": "Connect directly with lenders in the marketplace. Fast and transparent P2P flow."
         }
       }
     },
     "cta": {
       "title": "Ready to get started?",
-      "subtitle": "Connect your wallet and explore the marketplace to start lending or borrowing today.",
-      "viewMarketplace": "View Marketplace"
+      "subtitle": "Connect your wallet and explore the marketplace to start borrowing or lending today.",
+      "viewMarketplace": "View marketplace"
     },
     "footer": {
-      "testnet": "2024 PAWNABLE. Testnet Only - Educational Purposes.",
+      "testnet": "2024 PAWNABLE. Testnet only — for educational purposes.",
       "docs": "Docs",
       "github": "GitHub",
       "discord": "Discord"
     }
   },
+
   "marketplace": {
-    "title": "Loan Marketplace",
-    "subtitle": "Browse available loan requests and lend to earn interest",
+    "title": "Loan marketplace",
+    "subtitle": "Browse available loan requests and earn interest by lending",
+
+    "searchPlaceholder": "Search",
+    "filters": "Filters",
+    "sort": "Sort",
+    "count": "{count} items",
+
+    "sortOptions": {
+      "newest": "Newest",
+      "aprHigh": "Highest APR",
+      "aprLow": "Lowest APR",
+      "dueSoon": "Due soon"
+    },
+    "filterLabels": {
+      "asset": "Asset",
+      "status": "Status",
+      "duration": "Duration",
+      "apr": "APR"
+    },
+
     "noLoans": {
       "title": "No loans available",
-      "description": "Be the first to create a loan request",
-      "button": "Create Loan Request"
+      "description": "Create the first loan request",
+      "button": "Create loan request"
     },
+
     "card": {
-      "interest": "Interest",
-      "totalRepayment": "Total Repayment",
+      "interest": "APR",
+      "totalRepayment": "Total repayment",
       "due": "Due",
       "collateral": "Collateral",
-      "lendNow": "Lend Now",
-      "connectToLend": "Connect Wallet to Lend"
+      "lendNow": "Lend now",
+      "connectToLend": "Connect wallet to lend",
+
+      "borrowerSetsRate": "Borrowers set the terms",
+      "ctaConnectWallet": "Connect wallet",
+
+      "apr": "APR",
+      "totalRepay": "Total repay",
+      "walletRequired": "Connect wallet to lend"
     },
+
     "toast": {
-      "connectWallet": "Connect Wallet",
+      "connectWallet": "Connect wallet",
       "pleaseConnect": "Please connect your wallet to lend",
-      "matchSuccess": "Loan matched successfully! Proceed to activate the loan.",
-      "matchError": "Failed to match loan",
+      "matchSuccess": "Matched successfully. Activate the loan next.",
+      "matchError": "Failed to match the loan",
       "loadError": "Failed to load marketplace data"
     }
   },
+
   "createLoan": {
-    "title": "Create Loan Request",
-    "subtitle": "Set your terms and add collateral to create a new loan request",
+    "title": "Create loan request",
+    "subtitle": "Set terms and add collateral to create a new loan request",
+
     "form": {
-      "loanDetails": "Loan Details",
-      "asset": "Loan Asset",
-      "selectAsset": "Select asset",
+      "loanDetails": "Loan details",
+      "asset": "Loan asset",
+      "selectAsset": "Select an asset",
       "amount": "Amount",
       "enterAmount": "Enter amount",
-      "interestRate": "Interest Rate (%)",
-      "duration": "Loan Duration (days)",
-      "collateralInfo": "Collateral Information",
-      "collateralAsset": "Collateral Asset",
-      "collateralAmount": "Collateral Amount",
-      "addCollateral": "Add Collateral",
+      "interestRate": "Interest rate (%)",
+      "duration": "Duration (days)",
+      "collateralInfo": "Collateral",
+      "collateralAsset": "Collateral asset",
+      "collateralAmount": "Collateral amount",
+      "addCollateral": "Add collateral",
       "removeCollateral": "Remove",
       "summary": "Summary",
-      "totalRepayment": "Total Repayment",
-      "dueDate": "Due Date",
-      "createRequest": "Create Loan Request"
+      "totalRepayment": "Total repayment",
+      "dueDate": "Due date",
+      "createRequest": "Create request"
     },
+
     "toast": {
-      "connectWallet": "Connect Wallet",
+      "connectWallet": "Connect wallet",
       "pleaseConnect": "Please connect your wallet to create a loan request",
       "fillRequired": "Please fill in all required fields",
-      "addCollateral": "Please add at least one collateral",
+      "addCollateral": "Please add at least one collateral item",
       "createSuccess": "Loan request created successfully!",
-      "createError": "Failed to create loan request"
+      "createError": "Failed to create loan request",
+
+      "loadAssetsError": "Failed to load asset list.",
+      "connectWalletRequiredTitle": "Wallet required",
+      "connectWalletRequiredDescription": "Please connect your wallet to continue.",
+      "created": "Loan request created.",
+      "createFailed": "Failed to create loan request.",
+      "submitting": "Creating…",
+      "creating": "Creating..."
+    },
+
+    "card": {
+      "loanDetailsTitle": "Loan information",
+      "loanDetailsDesc": "Enter how much you want to borrow and on what terms",
+      "collateralTitle": "Collateral",
+      "collateralDesc": "Add collateral assets for this loan"
+    },
+
+    "summary": {
+      "totalRepaymentLabel": "Total repayment"
+    },
+
+    "actions": {
+      "addCollateral": "Add collateral",
+      "cancel": "Cancel",
+      "submit": "Create loan request",
+      "submitting": "Creating…"
     }
   },
+
   "dashboard": {
-    "title": "My Loans",
+    "title": "My loans",
+
+    "welcome": "Welcome back, {name}",
+    "unknownAsset": "Unknown asset",
+
+    "cta": {
+      "newLoan": "New loan request"
+    },
+
+    "toast": {
+      "loadError": "Failed to load dashboard data."
+    },
+
     "tabs": {
       "borrowed": "Borrowed",
       "lent": "Lent"
     },
+
+    "section": {
+      "loans": "Loan overview"
+    },
+
+    "kpi": {
+      "borrowedActive": {
+        "title": "Active loans (Borrowing)"
+      },
+      "lentActive": {
+        "title": "Active loans (Lending)"
+      },
+      "pending": "{count} pending",
+
+      "totalBorrowed": {
+        "title": "Total borrowed",
+        "hint": "USDT equivalent"
+      },
+      "totalLent": {
+        "title": "Total lent",
+        "hint": "USDT equivalent"
+      }
+    },
+
     "noLoans": {
       "borrowed": {
         "title": "No borrowed loans",
-        "description": "Create a loan request to get started"
+        "description": "Create a loan request to get started",
+        "button": "Create loan request"
       },
       "lent": {
         "title": "No lent loans",
-        "description": "Browse the marketplace to find loan requests"
+        "description": "Browse the marketplace to start lending",
+        "button": "Browse marketplace"
       }
     },
+
     "status": {
       "created": "Created",
       "matched": "Matched",
       "active": "Active",
       "repaid": "Repaid",
-      "liquidated": "Liquidated"
+      "liquidated": "Liquidated",
+      "pending": "Pending",
+      "cancelled": "Cancelled"
     },
+
     "card": {
-      "interest": "Interest",
+      "interest": "APR",
       "repayment": "Repayment",
       "due": "Due",
       "collateral": "Collateral",
-      "viewDetails": "View Details"
+      "viewDetails": "View details",
+      "totalRepayment": "Total repayment",
+      "dueDate": "Due date",
+      "viewDetails2": "View details"
+    },
+
+    "empty": {
+      "borrowed": {
+        "title": "No borrowed loans",
+        "description": "Create a loan request to get started",
+        "button": "Create loan request"
+      },
+      "lent": {
+        "title": "No lent loans",
+        "description": "Browse the marketplace to start lending",
+        "button": "Browse marketplace"
+      }
+    },
+
+    "loan": {
+      "interest": "APR",
+      "totalRepayment": "Total repayment",
+      "dueDate": "Due date",
+      "collateral": "Collateral",
+      "viewDetails": "View details"
     }
   },
+
   "loanDetail": {
+    "title": "Loan details",
+    "idLabel": "ID",
+
     "loading": "Loading loan details...",
     "notFound": "Loan not found",
-    "overview": "Loan Overview",
-    "loanAmount": "Loan Amount",
-    "interestRate": "Interest Rate",
-    "totalRepayment": "Total Repayment",
-    "dueDate": "Due Date",
+
+    "unknownAsset": "Unknown asset",
+    "emptyCollateral": "No collateral information.",
+
+    "section": {
+      "overview": "Overview",
+      "collateral": "Collateral",
+      "actions": "Actions",
+      "timeline": "Timeline"
+    },
+
+    "field": {
+      "loanAmount": "Loan amount",
+      "interestRate": "Interest rate",
+      "totalRepayment": "Total repayment",
+      "dueDate": "Due date"
+    },
+
+    "statusLabel": {
+      "pending": "Created",
+      "matched": "Matched",
+      "active": "Active",
+      "repaid": "Repaid",
+      "liquidated": "Liquidated",
+      "cancelled": "Cancelled",
+      "created": "Created"
+    },
+
+    "timeline": {
+      "created": "Created",
+      "matched": "Matched",
+      "closed": "Closed"
+    },
+
+    "action": {
+      "activate": "Activate loan",
+      "repay": "Repay loan",
+      "liquidate": "Liquidate collateral",
+      "cancel": "Cancel loan"
+    },
+
+    "hint": {
+      "connectWallet": "Connect your wallet to perform actions."
+    },
+
+    "confirm": {
+      "title": "Continue?",
+      "processing": "Processing...",
+      "cta": {
+        "cancel": "Cancel loan",
+        "activate": "Activate",
+        "repay": "Repay",
+        "liquidate": "Liquidate"
+      },
+      "description": {
+        "cancel": "This will cancel the loan request. This action cannot be undone.",
+        "activate": "This will activate the loan and transfer funds to the borrower.",
+        "repay": "This will repay the loan and return the collateral.",
+        "liquidate": "This will liquidate overdue loan collateral."
+      }
+    },
+
+    "toast": {
+      "loadError": "Failed to load loan details.",
+      "genericError": "Something went wrong while processing your request.",
+
+      "cancelSuccess": "Loan cancelled.",
+
+      "txPendingTitle": "Blockchain transaction pending",
+      "txPendingDesc": "Please confirm the transaction in MetaMask.",
+
+      "activateSuccess": "Loan activated. (TX: {hash})",
+      "repaySuccess": "Loan repaid. (TX: {hash})",
+      "liquidateSuccess": "Loan liquidated. (TX: {hash})",
+
+      "activateError": "Failed to activate the loan",
+      "repayError": "Failed to repay the loan",
+      "liquidateError": "Failed to liquidate collateral"
+    },
+
+    "overview": "Overview",
+    "loanAmount": "Loan amount",
+    "interestRate": "Interest rate",
+    "totalRepayment": "Total repayment",
+    "dueDate": "Due date",
     "status": "Status",
-    "timeline": "Timeline",
+    "timelineLegacy": "Timeline",
     "created": "Created",
     "matched": "Matched",
     "activated": "Activated",
     "repaid": "Repaid",
-    "collateral": "Collateral Information",
+    "collateral": "Collateral",
+
     "actions": {
       "title": "Actions",
-      "activate": "Activate Loan",
-      "repay": "Repay Loan",
-      "liquidate": "Liquidate Collateral",
+      "activate": "Activate loan",
+      "repay": "Repay loan",
+      "liquidate": "Liquidate collateral",
       "activateDesc": "Activate the loan and transfer funds",
-      "repayDesc": "Repay the loan and retrieve collateral",
-      "liquidateDesc": "Liquidate collateral for overdue loan"
+      "repayDesc": "Repay the loan and reclaim your collateral",
+      "liquidateDesc": "Liquidate overdue loan collateral",
+
+      "cancelLoan": "Cancel loan",
+      "match": "Match",
+      "cancelLoanDesc": "Cancel the loan"
     },
-    "toast": {
-      "activateSuccess": "Loan activated successfully!",
-      "activateError": "Failed to activate loan",
-      "repaySuccess": "Loan repaid successfully!",
-      "repayError": "Failed to repay loan",
-      "liquidateSuccess": "Collateral liquidated successfully!",
-      "liquidateError": "Failed to liquidate collateral"
+
+    "dialog": {
+      "title": "Are you sure?",
+      "description": "This action may not be reversible.",
+      "confirm": "Continue",
+      "cancel": "Cancel"
     }
   },
+
   "wallet": {
-    "connect": "Connect Wallet",
+    "connect": "Connect wallet",
     "connecting": "Connecting...",
     "connected": "Connected",
     "disconnect": "Disconnect",
-    "noMetaMask": "MetaMask not installed",
+    "noMetaMask": "MetaMask is not installed",
     "installMetaMask": "Install MetaMask",
     "error": "Wallet connection error",
-    "authError": "Authentication failed"
+    "authError": "Authentication failed",
+    "accountMenu": "Account menu",
+    "copyAddress": "Copy address",
+    "copied": "Address copied",
+    "copyError": "Failed to copy address",
+    "connectedDesc": "Wallet connected",
+    "disconnectDesc": "Wallet disconnected",
+
+    "connectedTitle": "Wallet connected",
+    "connectedDescription": "Your wallet is now connected.",
+    "disconnectedTitle": "Disconnected",
+    "disconnectedDescription": "Your wallet has been disconnected.",
+    "errorTitle": "Connection failed",
+    "unknownError": "An unknown error occurred."
+  },
+
+  "toast": {
+    "connectWalletRequiredTitle": "Wallet required",
+    "connectWalletRequiredDescription": "Please connect your wallet to continue.",
+    "loadFailedTitle": "Load failed",
+    "loadFailedDescription": "Failed to load data.",
+    "actionFailedTitle": "Request failed",
+    "actionFailedDescription": "Please try again later."
   }
 }
