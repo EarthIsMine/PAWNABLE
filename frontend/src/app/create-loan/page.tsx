@@ -18,6 +18,7 @@ import { Select } from "@/components/ui/select";
 import { useAuth } from "@/contexts/auth-context";
 import { assetAPI, loanAPI, type Asset } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { contractService } from "@/lib/contract";
 
 type CollateralRow = {
   asset_id: string;
@@ -73,12 +74,22 @@ export default function CreateLoanPage() {
   };
 
   const loanAssets = useMemo(
-    () => assets.filter((a) => a.asset_type === "token" || a.asset_type === "stablecoin"),
+    () => assets.filter((a) =>
+      a.asset_type.toLowerCase() === "erc20" ||
+      a.asset_type.toLowerCase() === "native" ||
+      a.asset_type === "token" ||
+      a.asset_type === "stablecoin"
+    ),
     [assets],
   );
 
   const collateralAssets = useMemo(
-    () => assets.filter((a) => a.asset_type === "token" || a.asset_type === "nft"),
+    () => assets.filter((a) =>
+      a.asset_type.toLowerCase() === "erc20" ||
+      a.asset_type.toLowerCase() === "native" ||
+      a.asset_type === "token" ||
+      a.asset_type === "nft"
+    ),
     [assets],
   );
 
@@ -178,7 +189,8 @@ export default function CreateLoanPage() {
       const repayDueAt = new Date();
       repayDueAt.setDate(repayDueAt.getDate() + Number(durationDays));
 
-      await loanAPI.create({
+      // 1. 먼저 DB에 대출 생성 (loan_id 얻기)
+      const createdLoan = await loanAPI.create({
         borrower_id: user.user_id,
         loan_asset_id: loanAssetId,
         loan_amount: Number(loanAmount),
@@ -193,11 +205,50 @@ export default function CreateLoanPage() {
       });
 
       toast({
-        title: tc("success"),
-        description: t("toast.createSuccess"),
+        title: "대출 DB 생성 완료",
+        description: "블록체인에 담보를 전송합니다...",
       });
 
-      router.push("/dashboard");
+      // 2. 블록체인에 requestLoan 호출 (담보 전송)
+      try {
+        await contractService.initialize();
+
+        // 현재 시간 + 대출 기간(일)로 timestamp 계산
+        const now = Math.floor(Date.now() / 1000); // 현재 시간 (초)
+        const durationSeconds = Number(durationDays) * 24 * 60 * 60; // 일 -> 초 변환
+        const dueTimestamp = now + durationSeconds;
+
+        console.log("Current time:", now);
+        console.log("Duration (days):", durationDays);
+        console.log("Duration (seconds):", durationSeconds);
+        console.log("Due timestamp:", dueTimestamp);
+
+        // 담보는 첫 번째 collateral의 amount를 사용 (현재는 단일 담보만 지원)
+        const collateralAmount = collaterals[0]?.amount || "0";
+
+        await contractService.requestLoan(
+          createdLoan.loan.loan_id, // DB에서 생성된 loan_id 사용
+          loanAmount,
+          totalRepayment.toString(),
+          collateralAmount,
+          dueTimestamp
+        );
+
+        toast({
+          title: tc("success"),
+          description: t("toast.createSuccess") + " 담보가 스마트 컨트랙트로 전송되었습니다.",
+        });
+
+        router.push("/dashboard");
+      } catch (blockchainError) {
+        toast({
+          title: "블록체인 오류",
+          description: blockchainError instanceof Error ? blockchainError.message : "담보 전송 실패",
+          variant: "destructive",
+        });
+        // 블록체인 실패 시 DB 대출도 취소해야 할 수 있음
+        throw blockchainError;
+      }
     } catch (err: unknown) {
       toast({
         title: tc("error"),
