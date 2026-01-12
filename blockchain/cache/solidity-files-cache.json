@@ -352,8 +352,8 @@
       ]
     },
     "/srv/PAWNABLE/blockchain/contracts/PawnableLoan.sol": {
-      "lastModificationDate": 1767335851796,
-      "contentHash": "42cc7067a9f187bba66fcdf9caa3f731",
+      "lastModificationDate": 1767622504862,
+      "contentHash": "d45e1a7275d579194221c2bd4b965b39",
       "sourceName": "contracts/PawnableLoan.sol",
       "solcConfig": {
         "version": "0.8.27",
@@ -382,7 +382,6 @@
       },
       "imports": [
         "@openzeppelin/contracts/token/ERC20/IERC20.sol",
-        "@openzeppelin/contracts/token/ERC721/IERC721.sol",
         "@openzeppelin/contracts/access/Ownable.sol",
         "@openzeppelin/contracts/utils/ReentrancyGuard.sol"
       ],
