@@ -1,41 +1,39 @@
 import { ethers } from "hardhat";
 
 async function main() {
-  // .env.local에서 컨트랙트 주소 읽기
-  const USDT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-  const USDC_ADDRESS = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
-
-  const signers = await ethers.getSigners();
-
   console.log("🪙 테스트 토큰 민팅 시작...\n");
 
-  // USDT 컨트랙트 연결
-  const usdt = await ethers.getContractAt("MockUSDT", USDT_ADDRESS);
-  const usdc = await ethers.getContractAt("MockUSDT", USDC_ADDRESS);
+  const usdtAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+  const wethAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
 
-  // 민팅할 계정들 (Account #0 ~ #9)
-  const recipients = signers.slice(0, 10);
-  const amount = ethers.parseUnits("10000", 6); // 10,000 토큰
+  const [deployer, account1, account2, account3] = await ethers.getSigners();
 
-  console.log("각 계정에 10,000 USDT와 10,000 USDC를 민팅합니다...\n");
+  console.log("계정 목록:");
+  console.log("Account 0:", deployer.address);
+  console.log("Account 1:", account1.address);
+  console.log("Account 2:", account2.address);
+  console.log("Account 3:", account3.address);
 
-  for (let i = 0; i < recipients.length; i++) {
-    const address = recipients[i].address;
+  const usdt = await ethers.getContractAt("MockUSDT", usdtAddress);
+  const weth = await ethers.getContractAt("MockUSDT", wethAddress);
 
-    // USDT 민팅
-    await usdt.mint(address, amount);
-    const usdtBalance = await usdt.balanceOf(address);
+  const accounts = [account1, account2, account3];
 
-    // USDC 민팅
-    await usdc.mint(address, amount);
-    const usdcBalance = await usdc.balanceOf(address);
+  for (const account of accounts) {
+    console.log("\n💰", account.address, "에게 토큰 민팅 중...");
 
-    console.log(`✅ Account #${i}: ${address}`);
-    console.log(`   USDT: ${ethers.formatUnits(usdtBalance, 6)}`);
-    console.log(`   USDC: ${ethers.formatUnits(usdcBalance, 6)}\n`);
+    const usdtAmount = ethers.parseUnits("10000", 6);
+    const usdtTx = await usdt.mint(account.address, usdtAmount);
+    await usdtTx.wait();
+    console.log("  ✓ 10,000 USDT 민팅 완료");
+
+    const wethAmount = ethers.parseUnits("10000", 6);
+    const wethTx = await weth.mint(account.address, wethAmount);
+    await wethTx.wait();
+    console.log("  ✓ 10,000 WETH 민팅 완료");
   }
 
-  console.log("🎉 민팅 완료!");
+  console.log("\n✅ 모든 계정에 토큰 민팅 완료!");
 }
 
 main()

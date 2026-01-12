@@ -2,14 +2,13 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title PawnableLoan
  * @dev P2P 담보 대출 플랫폼의 핵심 컨트랙트
- * @notice NFT를 담보로 ERC20 토큰(USDT 등)을 빌리고 빌려주는 시스템
+ * @notice ERC20 토큰을 담보로 다른 ERC20 토큰(USDT 등)을 빌리고 빌려주는 시스템
  *
  * 핵심 특징:
  * 1. 차입자가 원하는 금리를 직접 제시
@@ -47,8 +46,8 @@ contract PawnableLoan is Ownable, ReentrancyGuard {
         address loanToken;          // 대출 토큰 주소 (예: USDT)
         uint256 loanAmount;         // 대출 금액
         uint256 repayAmount;        // 상환 금액 (원금 + 이자)
-        address collateralNFT;      // 담보 NFT 컨트랙트 주소
-        uint256[] collateralTokenIds; // 담보 NFT 토큰 ID 배열
+        address collateralToken;    // 담보 토큰 주소 (ERC20)
+        uint256 collateralAmount;   // 담보 토큰 수량
         uint256 dueTimestamp;       // 상환 기한 (Unix timestamp)
         LoanStatus status;          // 대출 상태
         uint256 createdAt;          // 생성 시각
@@ -113,7 +112,7 @@ contract PawnableLoan is Ownable, ReentrancyGuard {
     event LoanLiquidated(
         string indexed loanId,
         address indexed lender,
-        uint256 collateralCount
+        uint256 collateralAmount
     );
 
     /**
@@ -164,13 +163,13 @@ contract PawnableLoan is Ownable, ReentrancyGuard {
 
     /**
      * @notice 새로운 대출 요청을 생성합니다
-     * @dev 차입자가 담보 NFT를 이 컨트랙트에 approve 해야 함
+     * @dev 차입자가 담보 토큰을 이 컨트랙트에 approve 해야 함
      * @param loanId 오프체인 DB의 대출 ID
      * @param loanToken 빌리고자 하는 토큰 주소 (USDT 등)
      * @param loanAmount 빌리고자 하는 금액
      * @param repayAmount 상환할 금액 (원금 + 이자)
-     * @param collateralNFT 담보로 제공할 NFT 컨트랙트 주소
-     * @param collateralTokenIds 담보로 제공할 NFT 토큰 ID 배열
+     * @param collateralToken 담보로 제공할 토큰 주소 (ERC20)
+     * @param collateralAmount 담보로 제공할 토큰 수량
      * @param dueTimestamp 상환 기한 (Unix timestamp)
      */
     function requestLoan(
@@ -178,8 +177,8 @@ contract PawnableLoan is Ownable, ReentrancyGuard {
         address loanToken,
         uint256 loanAmount,
         uint256 repayAmount,
-        address collateralNFT,
-        uint256[] memory collateralTokenIds,
+        address collateralToken,
+        uint256 collateralAmount,
         uint256 dueTimestamp
     ) external nonReentrant {
         // 유효성 검증
@@ -187,18 +186,15 @@ contract PawnableLoan is Ownable, ReentrancyGuard {
         require(loans[loanId].borrower == address(0), "Loan ID already exists");
         require(loanAmount >= MIN_LOAN_AMOUNT, "Loan amount too small");
         require(repayAmount > loanAmount, "Repay amount must be greater than loan amount");
-        require(collateralTokenIds.length > 0, "No collateral provided");
+        require(collateralAmount > 0, "No collateral provided");
         require(dueTimestamp > block.timestamp + MIN_LOAN_DURATION, "Due timestamp too soon");
 
-        // 담보 NFT를 컨트랙트로 전송
-        IERC721 nftContract = IERC721(collateralNFT);
-        for (uint256 i = 0; i < collateralTokenIds.length; i++) {
-            require(
-                nftContract.ownerOf(collateralTokenIds[i]) == msg.sender,
-                "Not owner of NFT"
-            );
-            nftContract.transferFrom(msg.sender, address(this), collateralTokenIds[i]);
-        }
+        // 담보 토큰을 컨트랙트로 전송
+        IERC20 collateral = IERC20(collateralToken);
+        require(
+            collateral.transferFrom(msg.sender, address(this), collateralAmount),
+            "Collateral transfer failed"
+        );
 
         // 대출 정보 저장
         loans[loanId] = Loan({
@@ -208,8 +204,8 @@ contract PawnableLoan is Ownable, ReentrancyGuard {
             loanToken: loanToken,
             loanAmount: loanAmount,
             repayAmount: repayAmount,
-            collateralNFT: collateralNFT,
-            collateralTokenIds: collateralTokenIds,
+            collateralToken: collateralToken,
+            collateralAmount: collateralAmount,
             dueTimestamp: dueTimestamp,
             status: LoanStatus.PENDING,
             createdAt: block.timestamp,
@@ -244,15 +240,12 @@ contract PawnableLoan is Ownable, ReentrancyGuard {
         loan.status = LoanStatus.CANCELLED;
         loan.closedAt = block.timestamp;
 
-        // 담보 NFT 반환
-        IERC721 nftContract = IERC721(loan.collateralNFT);
-        for (uint256 i = 0; i < loan.collateralTokenIds.length; i++) {
-            nftContract.transferFrom(
-                address(this),
-                loan.borrower,
-                loan.collateralTokenIds[i]
-            );
-        }
+        // 담보 토큰 반환
+        IERC20 collateral = IERC20(loan.collateralToken);
+        require(
+            collateral.transfer(loan.borrower, loan.collateralAmount),
+            "Collateral return failed"
+        );
 
         emit LoanCancelled(loanId, msg.sender);
     }
@@ -342,15 +335,12 @@ contract PawnableLoan is Ownable, ReentrancyGuard {
             "Transfer to lender failed"
         );
 
-        // 담보 NFT 반환
-        IERC721 nftContract = IERC721(loan.collateralNFT);
-        for (uint256 i = 0; i < loan.collateralTokenIds.length; i++) {
-            nftContract.transferFrom(
-                address(this),
-                loan.borrower,
-                loan.collateralTokenIds[i]
-            );
-        }
+        // 담보 토큰 반환
+        IERC20 collateral = IERC20(loan.collateralToken);
+        require(
+            collateral.transfer(loan.borrower, loan.collateralAmount),
+            "Collateral return failed"
+        );
 
         // 대출 상태 업데이트
         loan.status = LoanStatus.REPAID;
@@ -374,21 +364,18 @@ contract PawnableLoan is Ownable, ReentrancyGuard {
         // 기한이 지났는지 확인
         require(block.timestamp > loan.dueTimestamp, "Loan not overdue yet");
 
-        // 담보 NFT를 대출자에게 전송
-        IERC721 nftContract = IERC721(loan.collateralNFT);
-        for (uint256 i = 0; i < loan.collateralTokenIds.length; i++) {
-            nftContract.transferFrom(
-                address(this),
-                loan.lender,
-                loan.collateralTokenIds[i]
-            );
-        }
+        // 담보 토큰을 대출자에게 전송
+        IERC20 collateral = IERC20(loan.collateralToken);
+        require(
+            collateral.transfer(loan.lender, loan.collateralAmount),
+            "Collateral transfer failed"
+        );
 
         // 대출 상태 업데이트
         loan.status = LoanStatus.LIQUIDATED;
         loan.closedAt = block.timestamp;
 
-        emit LoanLiquidated(loanId, loan.lender, loan.collateralTokenIds.length);
+        emit LoanLiquidated(loanId, loan.lender, loan.collateralAmount);
     }
 
     // ==================== 뷰 함수 ====================

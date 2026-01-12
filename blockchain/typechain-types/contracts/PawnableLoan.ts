@@ -31,8 +31,8 @@ export declare namespace PawnableLoan {
     loanToken: AddressLike;
     loanAmount: BigNumberish;
     repayAmount: BigNumberish;
-    collateralNFT: AddressLike;
-    collateralTokenIds: BigNumberish[];
+    collateralToken: AddressLike;
+    collateralAmount: BigNumberish;
     dueTimestamp: BigNumberish;
     status: BigNumberish;
     createdAt: BigNumberish;
@@ -47,8 +47,8 @@ export declare namespace PawnableLoan {
     loanToken: string,
     loanAmount: bigint,
     repayAmount: bigint,
-    collateralNFT: string,
-    collateralTokenIds: bigint[],
+    collateralToken: string,
+    collateralAmount: bigint,
     dueTimestamp: bigint,
     status: bigint,
     createdAt: bigint,
@@ -61,8 +61,8 @@ export declare namespace PawnableLoan {
     loanToken: string;
     loanAmount: bigint;
     repayAmount: bigint;
-    collateralNFT: string;
-    collateralTokenIds: bigint[];
+    collateralToken: string;
+    collateralAmount: bigint;
     dueTimestamp: bigint;
     status: bigint;
     createdAt: bigint;
@@ -152,7 +152,7 @@ export interface PawnableLoanInterface extends Interface {
       BigNumberish,
       BigNumberish,
       AddressLike,
-      BigNumberish[],
+      BigNumberish,
       BigNumberish
     ]
   ): string;
@@ -260,17 +260,17 @@ export namespace LoanLiquidatedEvent {
   export type InputTuple = [
     loanId: string,
     lender: AddressLike,
-    collateralCount: BigNumberish
+    collateralAmount: BigNumberish
   ];
   export type OutputTuple = [
     loanId: string,
     lender: string,
-    collateralCount: bigint
+    collateralAmount: bigint
   ];
   export interface OutputObject {
     loanId: string;
     lender: string;
-    collateralCount: bigint;
+    collateralAmount: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -447,6 +447,7 @@ export interface PawnableLoan extends BaseContract {
         bigint,
         bigint,
         bigint,
+        bigint,
         bigint
       ] & {
         loanId: string;
@@ -455,7 +456,8 @@ export interface PawnableLoan extends BaseContract {
         loanToken: string;
         loanAmount: bigint;
         repayAmount: bigint;
-        collateralNFT: string;
+        collateralToken: string;
+        collateralAmount: bigint;
         dueTimestamp: bigint;
         status: bigint;
         createdAt: bigint;
@@ -482,8 +484,8 @@ export interface PawnableLoan extends BaseContract {
       loanToken: AddressLike,
       loanAmount: BigNumberish,
       repayAmount: BigNumberish,
-      collateralNFT: AddressLike,
-      collateralTokenIds: BigNumberish[],
+      collateralToken: AddressLike,
+      collateralAmount: BigNumberish,
       dueTimestamp: BigNumberish
     ],
     [void],
@@ -559,6 +561,7 @@ export interface PawnableLoan extends BaseContract {
         bigint,
         bigint,
         bigint,
+        bigint,
         bigint
       ] & {
         loanId: string;
@@ -567,7 +570,8 @@ export interface PawnableLoan extends BaseContract {
         loanToken: string;
         loanAmount: bigint;
         repayAmount: bigint;
-        collateralNFT: string;
+        collateralToken: string;
+        collateralAmount: bigint;
         dueTimestamp: bigint;
         status: bigint;
         createdAt: bigint;
@@ -600,8 +604,8 @@ export interface PawnableLoan extends BaseContract {
       loanToken: AddressLike,
       loanAmount: BigNumberish,
       repayAmount: BigNumberish,
-      collateralNFT: AddressLike,
-      collateralTokenIds: BigNumberish[],
+      collateralToken: AddressLike,
+      collateralAmount: BigNumberish,
       dueTimestamp: BigNumberish
     ],
     [void],
