@@ -139,12 +139,18 @@ export class LoanController {
 
   /**
    * POST /api/loans/:loan_id/activate
-   * 대출 활성화
+   * 대출 활성화 (프론트엔드에서 트랜잭션 완료 후 호출)
    */
   activateLoan = async (req: Request, res: Response) => {
     try {
       const { loan_id } = req.params;
-      const loan = await this.loanService.activateLoan(loan_id);
+      const { txHash } = req.body;
+
+      if (!txHash) {
+        return ResponseUtil.badRequest(res, 'Transaction hash is required');
+      }
+
+      const loan = await this.loanService.activateLoan(loan_id, txHash);
       return ResponseUtil.success(res, loan, 'Loan activated successfully');
     } catch (error) {
       console.error('Activate loan error:', error);
@@ -154,12 +160,18 @@ export class LoanController {
 
   /**
    * POST /api/loans/:loan_id/repay
-   * 대출 상환
+   * 대출 상환 (프론트엔드에서 트랜잭션 완료 후 호출)
    */
   repayLoan = async (req: Request, res: Response) => {
     try {
       const { loan_id } = req.params;
-      const loan = await this.loanService.repayLoan(loan_id);
+      const { txHash } = req.body;
+
+      if (!txHash) {
+        return ResponseUtil.badRequest(res, 'Transaction hash is required');
+      }
+
+      const loan = await this.loanService.repayLoan(loan_id, txHash);
       return ResponseUtil.success(res, loan, 'Loan repaid successfully');
     } catch (error) {
       console.error('Repay loan error:', error);
@@ -169,12 +181,18 @@ export class LoanController {
 
   /**
    * POST /api/loans/:loan_id/liquidate
-   * 대출 청산
+   * 대출 청산 (프론트엔드에서 트랜잭션 완료 후 호출)
    */
   liquidateLoan = async (req: Request, res: Response) => {
     try {
       const { loan_id } = req.params;
-      const loan = await this.loanService.liquidateLoan(loan_id);
+      const { txHash } = req.body;
+
+      if (!txHash) {
+        return ResponseUtil.badRequest(res, 'Transaction hash is required');
+      }
+
+      const loan = await this.loanService.liquidateLoan(loan_id, txHash);
       return ResponseUtil.success(res, loan, 'Loan liquidated successfully');
     } catch (error) {
       console.error('Liquidate loan error:', error);

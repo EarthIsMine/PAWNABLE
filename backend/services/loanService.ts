@@ -4,19 +4,16 @@ import { Loan } from '../models/loanModel';
 import { Collateral } from '../models/collaterals';
 import { CreateLoanDto, MatchLoanDto, LoanStatus } from '../types';
 import { v4 as uuidv4 } from 'uuid';
-import { ContractService } from '../contracts';
 import { TxLogService } from './txLogService';
 
 export class LoanService {
   private loanRepository: Repository<Loan>;
   private collateralRepository: Repository<Collateral>;
-  private contractService: ContractService;
   private txLogService: TxLogService;
 
   constructor() {
     this.loanRepository = AppDataSource.getRepository(Loan);
     this.collateralRepository = AppDataSource.getRepository(Collateral);
-    this.contractService = new ContractService();
     this.txLogService = new TxLogService();
   }
 
@@ -152,9 +149,10 @@ export class LoanService {
   }
 
   /**
-   * 대출 활성화 (실제 자금 전송 후)
+   * 대출 활성화 (프론트엔드에서 트랜잭션 완료 후 호출)
+   * 블록체인 트랜잭션은 실행하지 않고, DB 상태만 업데이트
    */
-  async activateLoan(loan_id: string): Promise<Loan> {
+  async activateLoan(loan_id: string, txHash: string): Promise<Loan> {
     const loan = await this.getLoanById(loan_id);
 
     if (!loan) {
@@ -169,60 +167,26 @@ export class LoanService {
       throw new Error('Lender not found for this loan');
     }
 
-    // 담보 정보 조회
-    const collaterals = await this.collateralRepository.find({
-      where: { loan_id },
-      relations: ['asset'],
-    });
+    // 트랜잭션 로그 기록
+    await this.txLogService.logLoanActivation(
+      txHash,
+      loan_id,
+      loan.borrower.wallet_address,
+      loan.lender.wallet_address,
+      parseFloat(loan.loan_amount.toString()),
+      loan.loan_asset_id
+    );
 
-    if (!collaterals || collaterals.length === 0) {
-      throw new Error('No collaterals found for this loan');
-    }
-
-    // 담보 토큰 ID 추출
-    const collateralTokenIds = collaterals
-      .map(c => c.token_id)
-      .filter((id): id is string => id !== null);
-
-    // 스마트 컨트랙트에서 대출 활성화
-    try {
-      const txResult = await this.contractService.activateLoan(
-        loan_id,
-        loan.borrower.wallet_address,
-        loan.lender.wallet_address,
-        loan.loan_amount.toString(),
-        collateralTokenIds,
-        loan.total_repay_amount.toString(),
-        Math.floor(loan.repay_due_at.getTime() / 1000)
-      );
-
-      if (!txResult.success) {
-        throw new Error('Blockchain transaction failed');
-      }
-
-      // 트랜잭션 로그 기록
-      await this.txLogService.logLoanActivation(
-        txResult.txHash,
-        loan_id,
-        loan.borrower.wallet_address,
-        loan.lender.wallet_address,
-        parseFloat(loan.loan_amount.toString()),
-        loan.loan_asset_id
-      );
-
-      // 대출 상태 업데이트
-      loan.status = LoanStatus.ACTIVE;
-      return await this.loanRepository.save(loan);
-    } catch (error) {
-      console.error('Error activating loan:', error);
-      throw new Error(`Failed to activate loan: ${(error as Error).message}`);
-    }
+    // 대출 상태 업데이트
+    loan.status = LoanStatus.ACTIVE;
+    return await this.loanRepository.save(loan);
   }
 
   /**
-   * 대출 상환
+   * 대출 상환 (프론트엔드에서 트랜잭션 완료 후 호출)
+   * 블록체인 트랜잭션은 실행하지 않고, DB 상태만 업데이트
    */
-  async repayLoan(loan_id: string): Promise<Loan> {
+  async repayLoan(loan_id: string, txHash: string): Promise<Loan> {
     const loan = await this.getLoanById(loan_id);
 
     if (!loan) {
@@ -237,54 +201,28 @@ export class LoanService {
       throw new Error('Lender not found for this loan');
     }
 
-    // 담보 정보 조회
-    const collaterals = await this.collateralRepository.find({
-      where: { loan_id },
-    });
+    // 트랜잭션 로그 기록
+    await this.txLogService.logLoanRepayment(
+      txHash,
+      loan_id,
+      loan.borrower.wallet_address,
+      loan.lender.wallet_address,
+      parseFloat(loan.total_repay_amount.toString()),
+      loan.loan_asset_id
+    );
 
-    const collateralTokenIds = collaterals
-      .map(c => c.token_id)
-      .filter((id): id is string => id !== null);
+    // 대출 상태 업데이트
+    loan.status = LoanStatus.REPAID;
+    loan.closed_at = new Date();
 
-    // 스마트 컨트랙트에서 대출 상환
-    try {
-      const txResult = await this.contractService.repayLoan(
-        loan_id,
-        loan.borrower.wallet_address,
-        loan.lender.wallet_address,
-        loan.total_repay_amount.toString(),
-        collateralTokenIds
-      );
-
-      if (!txResult.success) {
-        throw new Error('Blockchain transaction failed');
-      }
-
-      // 트랜잭션 로그 기록
-      await this.txLogService.logLoanRepayment(
-        txResult.txHash,
-        loan_id,
-        loan.borrower.wallet_address,
-        loan.lender.wallet_address,
-        parseFloat(loan.total_repay_amount.toString()),
-        loan.loan_asset_id
-      );
-
-      // 대출 상태 업데이트
-      loan.status = LoanStatus.REPAID;
-      loan.closed_at = new Date();
-
-      return await this.loanRepository.save(loan);
-    } catch (error) {
-      console.error('Error repaying loan:', error);
-      throw new Error(`Failed to repay loan: ${(error as Error).message}`);
-    }
+    return await this.loanRepository.save(loan);
   }
 
   /**
-   * 대출 청산 (기한 만료)
+   * 대출 청산 (프론트엔드에서 트랜잭션 완료 후 호출)
+   * 블록체인 트랜잭션은 실행하지 않고, DB 상태만 업데이트
    */
-  async liquidateLoan(loan_id: string): Promise<Loan> {
+  async liquidateLoan(loan_id: string, txHash: string): Promise<Loan> {
     const loan = await this.getLoanById(loan_id);
 
     if (!loan) {
@@ -304,46 +242,20 @@ export class LoanService {
       throw new Error('Lender not found for this loan');
     }
 
-    // 담보 정보 조회
-    const collaterals = await this.collateralRepository.find({
-      where: { loan_id },
-    });
+    // 트랜잭션 로그 기록
+    await this.txLogService.logLoanLiquidation(
+      txHash,
+      loan_id,
+      loan.borrower.wallet_address,
+      loan.lender.wallet_address,
+      loan.loan_asset_id
+    );
 
-    const collateralTokenIds = collaterals
-      .map(c => c.token_id)
-      .filter((id): id is string => id !== null);
+    // 대출 상태 업데이트
+    loan.status = LoanStatus.LIQUIDATED;
+    loan.closed_at = new Date();
 
-    // 스마트 컨트랙트에서 대출 청산
-    try {
-      const txResult = await this.contractService.liquidateLoan(
-        loan_id,
-        loan.borrower.wallet_address,
-        loan.lender.wallet_address,
-        collateralTokenIds
-      );
-
-      if (!txResult.success) {
-        throw new Error('Blockchain transaction failed');
-      }
-
-      // 트랜잭션 로그 기록
-      await this.txLogService.logLoanLiquidation(
-        txResult.txHash,
-        loan_id,
-        loan.borrower.wallet_address,
-        loan.lender.wallet_address,
-        loan.loan_asset_id
-      );
-
-      // 대출 상태 업데이트
-      loan.status = LoanStatus.LIQUIDATED;
-      loan.closed_at = new Date();
-
-      return await this.loanRepository.save(loan);
-    } catch (error) {
-      console.error('Error liquidating loan:', error);
-      throw new Error(`Failed to liquidate loan: ${(error as Error).message}`);
-    }
+    return await this.loanRepository.save(loan);
   }
 
   /**
