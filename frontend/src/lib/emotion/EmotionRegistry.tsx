@@ -11,7 +11,7 @@ interface EmotionCacheWithInserted extends EmotionCache {
 }
 
 function createEmotionCache() {
-  return createCache({ key: "css" });
+  return createCache({ key: "css", prepend: true });
 }
 
 export default function EmotionRegistry({ children }: { children: React.ReactNode }) {
