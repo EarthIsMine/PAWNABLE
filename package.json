@@ -7,8 +7,11 @@
     "backend"
   ],
   "scripts": {
-    "dev": "pnpm -r dev",
+    "dev": "pnpm -r --parallel dev",
+    "dev:frontend": "pnpm --filter @pawnable/frontend dev",
+    "dev:backend": "pnpm --filter @pawnable/backend dev",
     "build": "pnpm -r build",
+    "start": "pnpm -r --parallel start",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test"
   }
