@@ -103,7 +103,7 @@ export default function CreateLoanPage() {
     () =>
       allowedTokens.map((t) => ({
         value: t.address,
-        label: `${t.symbol} (${t.address.slice(0, 6)}...${t.address.slice(-4)})`,
+        label: `${t.symbol}`,
       })),
     [allowedTokens],
   );
@@ -112,7 +112,7 @@ export default function CreateLoanPage() {
     () =>
       allowedTokens.map((t) => ({
         value: t.address,
-        label: `${t.symbol} (${t.address.slice(0, 6)}...${t.address.slice(-4)})`,
+        label: `${t.symbol}`,
       })),
     [allowedTokens],
   );

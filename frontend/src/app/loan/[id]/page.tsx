@@ -317,7 +317,6 @@ export default function LoanDetailPage() {
                     <CollateralItem key={collateralToken.address ?? "collateral-token"}>
                       <div>
                         <div>{collateralToken.symbol ?? t("unknownAsset")}</div>
-                        <SmallMuted>{collateralToken.address ?? "-"}</SmallMuted>
                       </div>
                       <div>
                         <div>
