@@ -15,15 +15,15 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/auth-context";
-import { intentAPI, loanAPI, type Intent, type LoanIndex, type LoanListResponse } from "@/lib/api";
+import {
+  loanRequestAPI,
+  loanAPI,
+  type LoanRequest,
+  type LoanIndex,
+  type LoanListResponse,
+  type LoanRequestListResponse,
+} from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-
-type IntentListResponse = {
-  intents: Intent[];
-  total: number;
-  limit: number;
-  offset: number;
-};
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -32,9 +32,9 @@ export default function DashboardPage() {
   const t = useTranslations("dashboard");
   const c = useTranslations("common");
 
-  const [borrowedIntents, setBorrowedIntents] = useState<Intent[]>([]);
+  const [borrowedRequests, setBorrowedRequests] = useState<LoanRequest[]>([]);
   const [lentLoans, setLentLoans] = useState<LoanIndex[]>([]);
-  const [cancelledIntents, setCancelledIntents] = useState<Intent[]>([]);
+  const [cancelledRequests, setCancelledRequests] = useState<LoanRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -52,18 +52,18 @@ export default function DashboardPage() {
       setIsLoading(true);
 
       const [borrowedRes, lentRes] = await Promise.all([
-        intentAPI.getAll({ borrower: walletAddress, limit: 50 }),
+        loanRequestAPI.getAll({ borrower: walletAddress, limit: 50 }),
         loanAPI.getAll({ lender: walletAddress, limit: 50 }),
       ]);
 
-      const borrowed = (borrowedRes as IntentListResponse).intents ?? [];
+      const borrowed = (borrowedRes as LoanRequestListResponse).loanRequests ?? [];
       const lent = (lentRes as LoanListResponse).loans ?? [];
 
-      const cancelled = borrowed.filter((i) => i.status === "CANCELLED");
-      const activeBorrowed = borrowed.filter((i) => i.status !== "CANCELLED");
+      const cancelled = borrowed.filter((r) => r.status === "CANCELLED");
+      const activeBorrowed = borrowed.filter((r) => r.status !== "CANCELLED");
 
-      setBorrowedIntents(activeBorrowed);
-      setCancelledIntents(cancelled);
+      setBorrowedRequests(activeBorrowed);
+      setCancelledRequests(cancelled);
       setLentLoans(lent);
     } catch (err: unknown) {
       console.error("Failed to load dashboard:", err);
@@ -87,7 +87,7 @@ export default function DashboardPage() {
     return `${user.wallet_address.slice(0, 6)}...${user.wallet_address.slice(-4)}`;
   }, [user]);
 
-  const statsBorrow = useMemo(() => calcIntentStats(borrowedIntents), [borrowedIntents]);
+  const statsBorrow = useMemo(() => calcRequestStats(borrowedRequests), [borrowedRequests]);
   const statsLend = useMemo(() => calcLoanStats(lentLoans), [lentLoans]);
 
   if (authLoading || isLoading) {
@@ -179,18 +179,18 @@ export default function DashboardPage() {
             <Tabs defaultValue="borrowed">
               <TabsList>
                 <TabsTrigger value="borrowed">
-                  {t("tabs.borrowed")} ({borrowedIntents.length})
+                  {t("tabs.borrowed")} ({borrowedRequests.length})
                 </TabsTrigger>
                 <TabsTrigger value="lent">
                   {t("tabs.lent")} ({lentLoans.length})
                 </TabsTrigger>
                 <TabsTrigger value="cancelled">
-                  {t("tabs.cancelled")} ({cancelledIntents.length})
+                  {t("tabs.cancelled")} ({cancelledRequests.length})
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="borrowed">
-                {borrowedIntents.length === 0 ? (
+                {borrowedRequests.length === 0 ? (
                   <EmptyCard>
                     <EmptyTitle>{t("empty.borrowed.title")}</EmptyTitle>
                     <EmptyDesc>{t("empty.borrowed.description")}</EmptyDesc>
@@ -200,8 +200,8 @@ export default function DashboardPage() {
                   </EmptyCard>
                 ) : (
                   <ListGrid>
-                    {borrowedIntents.map((intent) => (
-                      <IntentCard key={intent.id} intent={intent} />
+                    {borrowedRequests.map((request) => (
+                      <RequestCard key={request.id} request={request} />
                     ))}
                   </ListGrid>
                 )}
@@ -226,7 +226,7 @@ export default function DashboardPage() {
               </TabsContent>
 
               <TabsContent value="cancelled">
-                {cancelledIntents.length === 0 ? (
+                {cancelledRequests.length === 0 ? (
                   <EmptyCard>
                     <EmptyTitle>{t("empty.cancelled.title")}</EmptyTitle>
                     <EmptyDesc>{t("empty.cancelled.description")}</EmptyDesc>
@@ -236,8 +236,8 @@ export default function DashboardPage() {
                   </EmptyCard>
                 ) : (
                   <ListGrid>
-                    {cancelledIntents.map((intent) => (
-                      <IntentCard key={intent.id} intent={intent} />
+                    {cancelledRequests.map((request) => (
+                      <RequestCard key={request.id} request={request} />
                     ))}
                   </ListGrid>
                 )}
@@ -254,21 +254,21 @@ export default function DashboardPage() {
 /* UI pieces                           */
 /* ---------------------------------- */
 
-function IntentCard({ intent }: { intent: Intent }) {
+function RequestCard({ request }: { request: LoanRequest }) {
   const t = useTranslations("dashboard");
 
-  const principalToken = intent.principalToken;
-  const collateralToken = intent.collateralToken;
+  const principalToken = request.principalToken;
+  const collateralToken = request.collateralToken;
 
   const principalAmount = principalToken
-    ? formatUnits(BigInt(intent.principalAmount), principalToken.decimals)
-    : intent.principalAmount;
+    ? formatUnits(BigInt(request.principalAmount), principalToken.decimals)
+    : request.principalAmount;
 
   const collateralAmount = collateralToken
-    ? formatUnits(BigInt(intent.collateralAmount), collateralToken.decimals)
-    : intent.collateralAmount;
+    ? formatUnits(BigInt(request.collateralAmount), collateralToken.decimals)
+    : request.collateralAmount;
 
-  const due = new Date(Number(intent.deadlineTimestamp) * 1000);
+  const durationDays = Math.ceil(request.durationSeconds / 86400);
 
   return (
     <Card>
@@ -281,7 +281,7 @@ function IntentCard({ intent }: { intent: Intent }) {
             <AssetName>{t("intent.principal")}</AssetName>
           </CardTitleBox>
 
-          <StatusPill data-status={intent.status}>{intent.status}</StatusPill>
+          <StatusPill data-status={request.status}>{request.status}</StatusPill>
         </CardTopRow>
       </CardHeader>
 
@@ -289,7 +289,7 @@ function IntentCard({ intent }: { intent: Intent }) {
         <MetaList>
           <MetaRow>
             <MetaLabel>{t("intent.interest")}</MetaLabel>
-            <MetaValueAccent>{(intent.interestBps / 100).toFixed(2)}%</MetaValueAccent>
+            <MetaValueAccent>{(request.interestBps / 100).toFixed(2)}%</MetaValueAccent>
           </MetaRow>
 
           <MetaRow>
@@ -301,11 +301,11 @@ function IntentCard({ intent }: { intent: Intent }) {
 
           <MetaRow>
             <MetaLabel>{t("intent.deadline")}</MetaLabel>
-            <MetaValue>{format(due, "yyyy-MM-dd")}</MetaValue>
+            <MetaValue>{durationDays} {durationDays === 1 ? "day" : "days"}</MetaValue>
           </MetaRow>
         </MetaList>
 
-        <Link href={`/loan/${intent.id}`}>
+        <Link href={`/loan/${request.id}`}>
           <Button variant="outline">
             {t("loan.viewDetails")}
             <ExternalLink className="ml-2 h-3 w-3" />
@@ -319,10 +319,10 @@ function IntentCard({ intent }: { intent: Intent }) {
 function LoanCard({ loan }: { loan: LoanIndex }) {
   const t = useTranslations("dashboard");
 
-  const intent = loan.intent;
-  const principalToken = intent?.principalToken;
-  const principalAmount = intent?.principalAmount
-    ? formatUnits(BigInt(intent.principalAmount), intent.principalToken.decimals)
+  const request = loan.request;
+  const principalToken = request?.principalToken;
+  const principalAmount = request?.principalAmount
+    ? formatUnits(BigInt(request.principalAmount), request.principalToken.decimals)
     : "-";
   const due = new Date(Number(loan.dueTimestamp) * 1000);
 
@@ -369,16 +369,16 @@ function LoanCard({ loan }: { loan: LoanIndex }) {
 /* Stats helpers                       */
 /* ---------------------------------- */
 
-function calcIntentStats(intents: Intent[]) {
-  const active = intents.filter((i) => i.status === "ACTIVE").length;
-  const pending = intents.filter((i) => i.status === "UNAVAILABLE").length;
-  const completed = intents.filter((i) =>
-    ["EXECUTED", "CANCELLED", "EXPIRED"].includes(i.status),
+function calcRequestStats(requests: LoanRequest[]) {
+  const active = requests.filter((r) => r.status === "OPEN").length;
+  const pending = requests.filter((r) => r.status === "FUNDED").length;
+  const completed = requests.filter((r) =>
+    ["FUNDED", "CANCELLED"].includes(r.status),
   ).length;
 
-  const totalAmount = intents.reduce((sum, i) => sum + BigInt(i.principalAmount), 0n);
+  const totalAmount = requests.reduce((sum, r) => sum + BigInt(r.principalAmount), 0n);
 
-  const token = intents[0]?.principalToken;
+  const token = requests[0]?.principalToken;
   const decimals = token?.decimals ?? 0;
   const symbol = token?.symbol ?? "";
   const totalAmountDisplay =
@@ -392,11 +392,11 @@ function calcLoanStats(loans: LoanIndex[]) {
   const pending = 0;
   const completed = loans.filter((l) => l.status !== "ONGOING").length;
   const totalAmount = loans.reduce((sum, l) => {
-    const amount = l.intent?.principalAmount ? BigInt(l.intent.principalAmount) : 0n;
+    const amount = l.request?.principalAmount ? BigInt(l.request.principalAmount) : 0n;
     return sum + amount;
   }, 0n);
 
-  const token = loans[0]?.intent?.principalToken;
+  const token = loans[0]?.request?.principalToken;
   const decimals = token?.decimals ?? 0;
   const symbol = token?.symbol ?? "";
   const totalAmountDisplay =
@@ -615,15 +615,16 @@ const StatusPill = styled.span`
   color: var(--foreground);
   white-space: nowrap;
 
-  &[data-status="liquidated"] {
+  &[data-status="CLAIMED"] {
     border-color: color-mix(in oklab, var(--error) 45%, var(--border));
   }
 
-  &[data-status="active"] {
+  &[data-status="OPEN"] {
     border-color: color-mix(in oklab, var(--success) 35%, var(--border));
   }
 
-  &[data-status="matched"] {
+  &[data-status="FUNDED"],
+  &[data-status="ONGOING"] {
     border-color: color-mix(in oklab, var(--info) 35%, var(--border));
   }
 `;
@@ -658,29 +659,4 @@ const MetaValue = styled.span`
 
 const MetaValueAccent = styled(MetaValue)`
   color: var(--primary);
-`;
-
-const CollateralBox = styled.div`
-  margin: 12px 0;
-  padding: 10px 12px;
-  border-radius: calc(var(--radius) - 3px);
-  border: 1px solid var(--border);
-  background: color-mix(in oklab, var(--muted) 55%, transparent);
-`;
-
-const CollateralTitle = styled.div`
-  font-size: 11px;
-  line-height: 1.4;
-  letter-spacing: 0.04em;
-  font-weight: 800;
-  color: var(--muted-foreground);
-  margin-bottom: 6px;
-`;
-
-const CollateralItem = styled.div`
-  font-size: 13px;
-  line-height: 1.5;
-  letter-spacing: -0.015em;
-  font-weight: 700;
-  color: var(--foreground);
 `;

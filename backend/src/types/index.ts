@@ -1,10 +1,8 @@
-// Intent Status
-export enum IntentStatus {
-  ACTIVE = 'ACTIVE',
-  UNAVAILABLE = 'UNAVAILABLE',
-  EXPIRED = 'EXPIRED',
+// Loan Request Status (on-chain order book)
+export enum LoanRequestStatus {
+  OPEN = 'OPEN',
+  FUNDED = 'FUNDED',
   CANCELLED = 'CANCELLED',
-  EXECUTED = 'EXECUTED',
 }
 
 // Loan Status
@@ -28,8 +26,11 @@ export interface ApiResponse<T = any> {
   message?: string;
 }
 
-// EIP-712 Intent Structure
-export interface EIP712Intent {
+// Indexer: LoanRequestCreated event data
+export interface IndexLoanRequestData {
+  chainId: number;
+  contractAddress: string;
+  onchainRequestId: string;
   borrower: string;
   collateralToken: string;
   collateralAmount: string;
@@ -37,23 +38,19 @@ export interface EIP712Intent {
   principalAmount: string;
   interestBps: number;
   durationSeconds: number;
-  nonce: string;
-  deadline: string;
+  createTxHash: string;
+  createdAtBlock: string;
 }
 
-// Create Intent Request
-export interface CreateIntentRequest {
+// Indexer: LoanFunded event data
+export interface IndexLoanFundedData {
   chainId: number;
-  verifyingContract: string;
+  contractAddress: string;
+  onchainLoanId: string;
+  onchainRequestId: string;
   borrower: string;
-  collateralToken: string;
-  collateralAmount: string;
-  principalToken: string;
-  principalAmount: string;
-  interestBps: number;
-  durationSeconds: number;
-  nonce: string;
-  deadline: string;
-  intentHash: string;
-  signature: string;
+  lender: string;
+  startTimestamp: string;
+  dueTimestamp: string;
+  fundTxHash: string;
 }

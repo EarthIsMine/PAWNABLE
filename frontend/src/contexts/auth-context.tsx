@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { walletService } from "@/lib/wallet";
-import { contractService } from "@/lib/contracts";
+import { contractService } from "@/lib/contract";
 
 export interface User {
   user_id: string;

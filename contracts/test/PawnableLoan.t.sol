@@ -15,190 +15,225 @@ contract TestToken is ERC20 {
 }
 
 contract PawnableLoanTest is Test {
-    PawnableLoan public loan;
+    PawnableLoan public pawn;
     TestToken public usdc;
     TestToken public weth;
 
-    // 테스트 계정
-    uint256 borrowerPk = 0xA11CE;
-    uint256 lenderPk = 0xB0B;
-    address borrower = vm.addr(borrowerPk);
-    address lender = vm.addr(lenderPk);
+    address borrower = makeAddr("borrower");
+    address lender = makeAddr("lender");
 
     function setUp() public {
-        loan = new PawnableLoan();
+        pawn = new PawnableLoan();
         usdc = new TestToken("USD Coin", "USDC");
         weth = new TestToken("Wrapped ETH", "WETH");
 
         // 토큰 발행
-        usdc.mint(lender, 10_000e6);
         weth.mint(borrower, 10e18);
+        usdc.mint(lender, 10_000e6);
 
         // borrower: weth approve (담보)
         vm.prank(borrower);
-        weth.approve(address(loan), type(uint256).max);
+        weth.approve(address(pawn), type(uint256).max);
 
         // lender: usdc approve (원금)
         vm.prank(lender);
-        usdc.approve(address(loan), type(uint256).max);
+        usdc.approve(address(pawn), type(uint256).max);
     }
 
     // ========================
-    // 헬퍼
+    // 헬퍼: 기본 대출 요청 생성
     // ========================
 
-    function _signIntent(
-        uint256 pk,
-        address _borrower,
-        address collateralToken,
-        uint256 collateralAmount,
-        address principalToken,
-        uint256 principalAmount,
-        uint256 interestBps,
-        uint256 durationSeconds,
-        uint256 nonce,
-        uint256 deadline
-    ) internal view returns (bytes memory) {
-        bytes32 structHash = keccak256(
-            abi.encode(
-                loan.LOAN_INTENT_TYPEHASH(),
-                _borrower,
-                collateralToken,
-                collateralAmount,
-                principalToken,
-                principalAmount,
-                interestBps,
-                durationSeconds,
-                nonce,
-                deadline
-            )
+    function _createDefaultRequest() internal returns (uint256 requestId) {
+        vm.prank(borrower);
+        requestId = pawn.createLoanRequest(
+            address(weth), 1e18, address(usdc), 1000e6, 500, 7 days
         );
-        bytes32 digest = loan.getIntentHash(
-            _borrower,
-            collateralToken,
-            collateralAmount,
-            principalToken,
-            principalAmount,
-            interestBps,
-            durationSeconds,
-            nonce,
-            deadline
-        );
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, digest);
-        return abi.encodePacked(r, s, v);
+    }
+
+    function _createAndFund() internal returns (uint256 requestId, uint256 loanId) {
+        requestId = _createDefaultRequest();
+        vm.prank(lender);
+        loanId = pawn.fundLoan(requestId);
     }
 
     // ========================
-    // executeLoan 테스트
+    // createLoanRequest 테스트
     // ========================
 
-    function test_executeLoan_ERC20() public {
-        uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _signIntent(
-            borrowerPk, borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 0, deadline
+    function test_createLoanRequest_ERC20Collateral() public {
+        vm.prank(borrower);
+        uint256 requestId = pawn.createLoanRequest(
+            address(weth), 1e18, address(usdc), 1000e6, 500, 7 days
         );
+
+        assertEq(requestId, 0);
+        assertEq(weth.balanceOf(address(pawn)), 1e18); // 담보 lock
+        assertEq(weth.balanceOf(borrower), 9e18); // 10 - 1
+
+        PawnableLoan.LoanRequest memory req = pawn.getLoanRequest(0);
+        assertEq(req.borrower, borrower);
+        assertEq(req.collateralToken, address(weth));
+        assertEq(req.collateralAmount, 1e18);
+        assertEq(req.principalToken, address(usdc));
+        assertEq(req.principalAmount, 1000e6);
+        assertEq(req.interestBps, 500);
+        assertEq(req.duration, 7 days);
+        assertEq(uint8(req.status), uint8(PawnableLoan.RequestStatus.OPEN));
+    }
+
+    function test_createLoanRequest_NativeCollateral() public {
+        vm.deal(borrower, 2 ether);
+        vm.prank(borrower);
+        uint256 requestId = pawn.createLoanRequest{value: 1 ether}(
+            address(0), 1 ether, address(usdc), 1000e6, 500, 7 days
+        );
+
+        assertEq(requestId, 0);
+        assertEq(address(pawn).balance, 1 ether);
+        assertEq(borrower.balance, 1 ether);
+    }
+
+    function testRevert_createLoanRequest_ZeroCollateral() public {
+        vm.prank(borrower);
+        vm.expectRevert("Zero collateral");
+        pawn.createLoanRequest(address(weth), 0, address(usdc), 1000e6, 500, 7 days);
+    }
+
+    function testRevert_createLoanRequest_IncorrectETH() public {
+        vm.deal(borrower, 2 ether);
+        vm.prank(borrower);
+        vm.expectRevert("Incorrect ETH amount");
+        pawn.createLoanRequest{value: 0.5 ether}(
+            address(0), 1 ether, address(usdc), 1000e6, 500, 7 days
+        );
+    }
+
+    function testRevert_createLoanRequest_ETHSentForERC20() public {
+        vm.deal(borrower, 1 ether);
+        vm.prank(borrower);
+        vm.expectRevert("ETH sent for ERC20 collateral");
+        pawn.createLoanRequest{value: 1 ether}(
+            address(weth), 1e18, address(usdc), 1000e6, 500, 7 days
+        );
+    }
+
+    // ========================
+    // cancelLoanRequest 테스트
+    // ========================
+
+    function test_cancelLoanRequest() public {
+        uint256 requestId = _createDefaultRequest();
+
+        uint256 balBefore = weth.balanceOf(borrower);
+        vm.prank(borrower);
+        pawn.cancelLoanRequest(requestId);
+
+        PawnableLoan.LoanRequest memory req = pawn.getLoanRequest(requestId);
+        assertEq(uint8(req.status), uint8(PawnableLoan.RequestStatus.CANCELLED));
+        assertEq(weth.balanceOf(borrower), balBefore + 1e18); // 담보 반환
+    }
+
+    function test_cancelLoanRequest_NativeCollateral() public {
+        vm.deal(borrower, 2 ether);
+        vm.prank(borrower);
+        uint256 requestId = pawn.createLoanRequest{value: 1 ether}(
+            address(0), 1 ether, address(usdc), 1000e6, 500, 7 days
+        );
+
+        uint256 balBefore = borrower.balance;
+        vm.prank(borrower);
+        pawn.cancelLoanRequest(requestId);
+
+        assertEq(borrower.balance, balBefore + 1 ether);
+    }
+
+    function testRevert_cancelLoanRequest_NotBorrower() public {
+        uint256 requestId = _createDefaultRequest();
 
         vm.prank(lender);
-        uint256 loanId = loan.executeLoan(
-            borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 0, deadline, sig
-        );
+        vm.expectRevert("Not borrower");
+        pawn.cancelLoanRequest(requestId);
+    }
+
+    function testRevert_cancelLoanRequest_AlreadyFunded() public {
+        (uint256 requestId,) = _createAndFund();
+
+        vm.prank(borrower);
+        vm.expectRevert("Not open");
+        pawn.cancelLoanRequest(requestId);
+    }
+
+    // ========================
+    // fundLoan 테스트
+    // ========================
+
+    function test_fundLoan_ERC20Principal() public {
+        uint256 requestId = _createDefaultRequest();
+
+        vm.prank(lender);
+        uint256 loanId = pawn.fundLoan(requestId);
 
         assertEq(loanId, 0);
         assertEq(usdc.balanceOf(borrower), 1000e6); // borrower에게 원금 전달
-        assertEq(weth.balanceOf(address(loan)), 1e18); // 담보 lock
-        assertEq(loan.nonces(borrower), 1); // nonce 증가
 
-        PawnableLoan.Loan memory l = loan.getLoan(0);
+        PawnableLoan.LoanRequest memory req = pawn.getLoanRequest(requestId);
+        assertEq(uint8(req.status), uint8(PawnableLoan.RequestStatus.FUNDED));
+
+        PawnableLoan.Loan memory l = pawn.getLoan(loanId);
         assertEq(l.borrower, borrower);
         assertEq(l.lender, lender);
+        assertEq(l.requestId, requestId);
         assertEq(uint8(l.status), uint8(PawnableLoan.LoanStatus.ONGOING));
     }
 
-    function test_executeLoan_NativeCollateral() public {
-        // borrower가 ETH 예치
-        vm.deal(borrower, 2 ether);
+    function test_fundLoan_NativePrincipal() public {
         vm.prank(borrower);
-        loan.depositEth{value: 1 ether}();
-
-        uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _signIntent(
-            borrowerPk, borrower, address(0), 1 ether, address(usdc), 1000e6, 500, 7 days, 0, deadline
-        );
-
-        vm.prank(lender);
-        loan.executeLoan(borrower, address(0), 1 ether, address(usdc), 1000e6, 500, 7 days, 0, deadline, sig);
-
-        assertEq(loan.ethDeposits(borrower), 0); // 예치금 차감됨
-        assertEq(usdc.balanceOf(borrower), 1000e6);
-    }
-
-    function test_executeLoan_NativePrincipal() public {
-        uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _signIntent(
-            borrowerPk, borrower, address(weth), 1e18, address(0), 0.5 ether, 500, 7 days, 0, deadline
+        uint256 requestId = pawn.createLoanRequest(
+            address(weth), 1e18, address(0), 0.5 ether, 500, 7 days
         );
 
         vm.deal(lender, 1 ether);
         vm.prank(lender);
-        loan.executeLoan{value: 0.5 ether}(
-            borrower, address(weth), 1e18, address(0), 0.5 ether, 500, 7 days, 0, deadline, sig
-        );
+        uint256 loanId = pawn.fundLoan{value: 0.5 ether}(requestId);
 
-        assertEq(borrower.balance, 0.5 ether); // borrower에게 ETH 전달
-        assertEq(weth.balanceOf(address(loan)), 1e18); // 담보 lock
+        assertEq(borrower.balance, 0.5 ether);
+        assertEq(loanId, 0);
     }
 
-    function testRevert_expiredDeadline() public {
-        uint256 deadline = block.timestamp - 1; // 이미 만료
-        bytes memory sig = _signIntent(
-            borrowerPk, borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 0, deadline
-        );
+    function testRevert_fundLoan_SelfFund() public {
+        uint256 requestId = _createDefaultRequest();
 
-        vm.prank(lender);
-        vm.expectRevert("Intent expired");
-        loan.executeLoan(borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 0, deadline, sig);
-    }
-
-    function testRevert_invalidNonce() public {
-        uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _signIntent(
-            borrowerPk, borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 999, deadline
-        );
-
-        vm.prank(lender);
-        vm.expectRevert("Invalid nonce");
-        loan.executeLoan(borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 999, deadline, sig);
-    }
-
-    function testRevert_invalidSignature() public {
-        uint256 deadline = block.timestamp + 1 hours;
-        // lender의 키로 서명 (borrower가 아님)
-        bytes memory sig = _signIntent(
-            lenderPk, borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 0, deadline
-        );
-
-        vm.prank(lender);
-        vm.expectRevert("Invalid signature");
-        loan.executeLoan(borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 0, deadline, sig);
-    }
-
-    function testRevert_replayAttack() public {
-        uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _signIntent(
-            borrowerPk, borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 0, deadline
-        );
-
-        vm.prank(lender);
-        loan.executeLoan(borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 0, deadline, sig);
-
-        // 같은 서명으로 재실행 시도
-        weth.mint(borrower, 1e18);
+        usdc.mint(borrower, 1000e6);
         vm.prank(borrower);
-        weth.approve(address(loan), type(uint256).max);
+        usdc.approve(address(pawn), type(uint256).max);
+
+        vm.prank(borrower);
+        vm.expectRevert("Cannot self-fund");
+        pawn.fundLoan(requestId);
+    }
+
+    function testRevert_fundLoan_NotOpen() public {
+        uint256 requestId = _createDefaultRequest();
+
+        vm.prank(borrower);
+        pawn.cancelLoanRequest(requestId);
 
         vm.prank(lender);
-        vm.expectRevert("Invalid nonce"); // nonce가 이미 증가됨
-        loan.executeLoan(borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 0, deadline, sig);
+        vm.expectRevert("Not open");
+        pawn.fundLoan(requestId);
+    }
+
+    function testRevert_fundLoan_IncorrectETH() public {
+        vm.prank(borrower);
+        uint256 requestId = pawn.createLoanRequest(
+            address(weth), 1e18, address(0), 1 ether, 500, 7 days
+        );
+
+        vm.deal(lender, 2 ether);
+        vm.prank(lender);
+        vm.expectRevert("Incorrect ETH amount");
+        pawn.fundLoan{value: 0.5 ether}(requestId);
     }
 
     // ========================
@@ -206,48 +241,35 @@ contract PawnableLoanTest is Test {
     // ========================
 
     function test_repayLoan() public {
-        // 대출 실행
-        uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _signIntent(
-            borrowerPk, borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 0, deadline
-        );
-        vm.prank(lender);
-        loan.executeLoan(borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 0, deadline, sig);
+        (, uint256 loanId) = _createAndFund();
 
-        // 상환 (원금 1000 + 이자 50 = 1050 USDC)
-        uint256 repayAmount = loan.getRepayAmount(0);
-        assertEq(repayAmount, 1050e6);
+        uint256 repayAmount = pawn.getRepayAmount(loanId);
+        assertEq(repayAmount, 1050e6); // 1000 + 5%
 
-        usdc.mint(borrower, 1050e6); // 상환금 마련
+        usdc.mint(borrower, 1050e6);
         vm.prank(borrower);
-        usdc.approve(address(loan), type(uint256).max);
+        usdc.approve(address(pawn), type(uint256).max);
 
         vm.prank(borrower);
-        loan.repayLoan(0);
+        pawn.repayLoan(loanId);
 
-        PawnableLoan.Loan memory l = loan.getLoan(0);
+        PawnableLoan.Loan memory l = pawn.getLoan(loanId);
         assertEq(uint8(l.status), uint8(PawnableLoan.LoanStatus.REPAID));
-        assertEq(weth.balanceOf(borrower), 10e18); // 담보 반환 (원래 10 - 1 lock + 1 반환)
+        assertEq(weth.balanceOf(borrower), 10e18); // 담보 반환
     }
 
     function testRevert_repayAfterDue() public {
-        uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _signIntent(
-            borrowerPk, borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 0, deadline
-        );
-        vm.prank(lender);
-        loan.executeLoan(borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 0, deadline, sig);
+        (, uint256 loanId) = _createAndFund();
 
-        // 7일 + 1초 경과
         vm.warp(block.timestamp + 7 days + 1);
 
         usdc.mint(borrower, 1050e6);
         vm.prank(borrower);
-        usdc.approve(address(loan), type(uint256).max);
+        usdc.approve(address(pawn), type(uint256).max);
 
         vm.prank(borrower);
         vm.expectRevert("Loan overdue");
-        loan.repayLoan(0);
+        pawn.repayLoan(loanId);
     }
 
     // ========================
@@ -255,83 +277,99 @@ contract PawnableLoanTest is Test {
     // ========================
 
     function test_claimCollateral() public {
-        uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _signIntent(
-            borrowerPk, borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 0, deadline
-        );
-        vm.prank(lender);
-        loan.executeLoan(borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 0, deadline, sig);
+        (, uint256 loanId) = _createAndFund();
 
-        // 기한 경과
         vm.warp(block.timestamp + 7 days + 1);
 
         // 누구나 호출 가능
         address bot = makeAddr("bot");
         vm.prank(bot);
-        loan.claimCollateral(0);
+        pawn.claimCollateral(loanId);
 
-        PawnableLoan.Loan memory l = loan.getLoan(0);
+        PawnableLoan.Loan memory l = pawn.getLoan(loanId);
         assertEq(uint8(l.status), uint8(PawnableLoan.LoanStatus.CLAIMED));
         assertEq(weth.balanceOf(lender), 1e18); // lender에게 담보 전달
     }
 
     function testRevert_claimBeforeDue() public {
-        uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _signIntent(
-            borrowerPk, borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 0, deadline
-        );
-        vm.prank(lender);
-        loan.executeLoan(borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 0, deadline, sig);
+        (, uint256 loanId) = _createAndFund();
 
         vm.expectRevert("Loan not overdue");
-        loan.claimCollateral(0);
+        pawn.claimCollateral(loanId);
     }
 
     // ========================
-    // incrementNonce 테스트
+    // 전체 라이프사이클 테스트
     // ========================
 
-    function test_incrementNonce() public {
-        assertEq(loan.nonces(borrower), 0);
+    function test_fullLifecycle_createFundRepay() public {
+        // 1. 대출 요청 생성
+        uint256 requestId = _createDefaultRequest();
+        assertEq(weth.balanceOf(address(pawn)), 1e18);
 
-        vm.prank(borrower);
-        loan.incrementNonce();
-
-        assertEq(loan.nonces(borrower), 1);
-
-        // 이전 nonce로 만든 intent는 실행 불가
-        uint256 deadline = block.timestamp + 1 hours;
-        bytes memory sig = _signIntent(
-            borrowerPk, borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 0, deadline
-        );
-
+        // 2. 자금 제공
         vm.prank(lender);
-        vm.expectRevert("Invalid nonce");
-        loan.executeLoan(borrower, address(weth), 1e18, address(usdc), 1000e6, 500, 7 days, 0, deadline, sig);
+        uint256 loanId = pawn.fundLoan(requestId);
+        assertEq(usdc.balanceOf(borrower), 1000e6);
+
+        // 3. 상환
+        usdc.mint(borrower, 1050e6);
+        vm.prank(borrower);
+        usdc.approve(address(pawn), type(uint256).max);
+        vm.prank(borrower);
+        pawn.repayLoan(loanId);
+
+        // 최종 상태 확인
+        assertEq(uint8(pawn.getLoanRequest(requestId).status), uint8(PawnableLoan.RequestStatus.FUNDED));
+        assertEq(uint8(pawn.getLoan(loanId).status), uint8(PawnableLoan.LoanStatus.REPAID));
+        assertEq(weth.balanceOf(borrower), 10e18); // 담보 전부 돌아옴
+    }
+
+    function test_fullLifecycle_createFundClaim() public {
+        // 1. 대출 요청 생성
+        uint256 requestId = _createDefaultRequest();
+
+        // 2. 자금 제공
+        vm.prank(lender);
+        uint256 loanId = pawn.fundLoan(requestId);
+
+        // 3. 기한 경과 → 담보 청산
+        vm.warp(block.timestamp + 7 days + 1);
+        pawn.claimCollateral(loanId);
+
+        assertEq(uint8(pawn.getLoan(loanId).status), uint8(PawnableLoan.LoanStatus.CLAIMED));
+        assertEq(weth.balanceOf(lender), 1e18); // lender가 담보 획득
+    }
+
+    function test_fullLifecycle_createCancel() public {
+        // 1. 대출 요청 생성
+        uint256 requestId = _createDefaultRequest();
+        assertEq(weth.balanceOf(borrower), 9e18);
+
+        // 2. 취소
+        vm.prank(borrower);
+        pawn.cancelLoanRequest(requestId);
+
+        assertEq(uint8(pawn.getLoanRequest(requestId).status), uint8(PawnableLoan.RequestStatus.CANCELLED));
+        assertEq(weth.balanceOf(borrower), 10e18); // 담보 전부 돌아옴
     }
 
     // ========================
-    // ETH 예치/인출 테스트
+    // nextRequestId / nextLoanId 테스트
     // ========================
 
-    function test_ethDeposit() public {
-        vm.deal(borrower, 5 ether);
+    function test_multipleRequests() public {
+        weth.mint(borrower, 10e18);
+        vm.prank(borrower);
+        weth.approve(address(pawn), type(uint256).max);
 
         vm.prank(borrower);
-        loan.depositEth{value: 2 ether}();
-        assertEq(loan.ethDeposits(borrower), 2 ether);
-
+        uint256 id0 = pawn.createLoanRequest(address(weth), 1e18, address(usdc), 1000e6, 500, 7 days);
         vm.prank(borrower);
-        loan.withdrawEth(1 ether);
-        assertEq(loan.ethDeposits(borrower), 1 ether);
-        assertEq(borrower.balance, 4 ether);
-    }
+        uint256 id1 = pawn.createLoanRequest(address(weth), 2e18, address(usdc), 2000e6, 300, 14 days);
 
-    function test_receiveEth() public {
-        vm.deal(borrower, 1 ether);
-        vm.prank(borrower);
-        (bool success,) = address(loan).call{value: 1 ether}("");
-        assertTrue(success);
-        assertEq(loan.ethDeposits(borrower), 1 ether);
+        assertEq(id0, 0);
+        assertEq(id1, 1);
+        assertEq(pawn.nextRequestId(), 2);
     }
 }

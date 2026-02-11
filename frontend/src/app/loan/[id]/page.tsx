@@ -11,61 +11,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { intentAPI, loanAPI, type Intent } from "@/lib/api";
+import { loanRequestAPI, loanAPI, type LoanRequest, type LoanIndex } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { walletService } from "@/lib/wallet";
+import { contractService } from "@/lib/contract";
 
 import { Loader2, ArrowLeft, Calendar, TrendingUp, Coins, Shield, AlertCircle } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 
-type LoanStatus = "ONGOING" | "REPAID" | "CLAIMED";
-
-type TokenInfo = {
-  symbol: string;
-  decimals: number;
-  address: string;
-  isNative: boolean;
-};
-
-type IntentInfo = {
-  principalAmount: string;
-  collateralAmount: string;
-  interestBps: number;
-  durationSeconds: number;
-  principalToken: TokenInfo;
-  collateralToken: TokenInfo;
-};
-
-type LoanDetail = {
-  id: string;
-  loanId: string;
-  status: LoanStatus;
-  borrower: { address: string };
-  lender: { address: string };
-  intent?: IntentInfo | null;
-  startTimestamp: string;
-  dueTimestamp: string;
-};
-
 type Detail =
-  | { kind: "loan"; data: LoanDetail }
-  | { kind: "intent"; data: Intent };
+  | { kind: "loan"; data: LoanIndex }
+  | { kind: "request"; data: LoanRequest };
 
 function toBigInt(value: string | number | bigint | null | undefined) {
   if (typeof value === "bigint") return value;
   if (typeof value === "number") return BigInt(value);
   if (typeof value === "string" && value.length > 0) return BigInt(value);
   return 0n;
-}
-
-function toDateFromValue(value: string | null | undefined) {
-  if (!value) return null;
-  if (/^\d+$/.test(value)) {
-    return new Date(Number(value) * 1000);
-  }
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 function formatAmount(raw: string, decimals: number) {
@@ -87,6 +49,7 @@ export default function LoanDetailPage() {
 
   const [detail, setDetail] = useState<Detail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const loanId = params?.id;
 
@@ -100,16 +63,18 @@ export default function LoanDetailPage() {
     try {
       setIsLoading(true);
 
+      // Try loading as loan first
       try {
-        const loanRes = (await loanAPI.getById(id)) as LoanDetail;
+        const loanRes = await loanAPI.getById(id);
         setDetail({ kind: "loan", data: loanRes });
         return;
       } catch {
         // fall through
       }
 
-      const intentRes = (await intentAPI.getById(id)) as Intent;
-      setDetail({ kind: "intent", data: intentRes });
+      // Then try as loan request
+      const requestRes = await loanRequestAPI.getById(id);
+      setDetail({ kind: "request", data: requestRes });
     } catch (err) {
       toast({
         title: tc("error"),
@@ -127,77 +92,100 @@ export default function LoanDetailPage() {
 
     if (detail.kind === "loan") {
       const loan = detail.data;
-      const intent = loan.intent ?? null;
-      const principalToken = intent?.principalToken ?? null;
-      const collateralToken = intent?.collateralToken ?? null;
+      const request = loan.request ?? null;
+      const principalToken = request?.principalToken ?? null;
+      const collateralToken = request?.collateralToken ?? null;
       const dueDate = new Date(Number(loan.dueTimestamp) * 1000);
       const isOverdue = dueDate.getTime() < Date.now();
       return {
         kind: "loan" as const,
         status: loan.status,
-        displayId: loan.loanId ?? loan.id,
+        displayId: loan.onchainLoanId ?? loan.id,
         principalToken,
         collateralToken,
-        intent,
+        principalAmount: request?.principalAmount ?? "0",
+        collateralAmount: request?.collateralAmount ?? "0",
+        interestBps: request?.interestBps ?? 0,
         dueDate,
         isOverdue,
         createdAt: loan.startTimestamp,
         dueAt: loan.dueTimestamp,
+        borrowerAddress: loan.borrower?.address ?? "",
       };
     }
 
-    const intent = detail.data;
-    const principalToken = intent.principalToken ?? null;
-    const collateralToken = intent.collateralToken ?? null;
-    const dueDate = new Date(Number(intent.deadlineTimestamp) * 1000);
-    const isOverdue = dueDate.getTime() < Date.now();
+    const request = detail.data;
+    const principalToken = request.principalToken ?? null;
+    const collateralToken = request.collateralToken ?? null;
+    const durationDays = Math.ceil(request.durationSeconds / 86400);
     return {
-      kind: "intent" as const,
-      status: intent.status,
-      displayId: intent.id,
+      kind: "request" as const,
+      status: request.status,
+      displayId: request.onchainRequestId ?? request.id,
       principalToken,
       collateralToken,
-      intent,
-      dueDate,
-      isOverdue,
-      createdAt: (intent as { createdAt?: string }).createdAt ?? null,
-      dueAt: intent.deadlineTimestamp,
+      principalAmount: request.principalAmount,
+      collateralAmount: request.collateralAmount,
+      interestBps: request.interestBps,
+      dueDate: null as Date | null,
+      isOverdue: false,
+      createdAt: request.indexedAt ?? null,
+      dueAt: null as string | null,
+      durationDays,
+      borrowerAddress: request.borrowerAddress,
+      onchainRequestId: request.onchainRequestId,
     };
   }, [detail]);
 
-  const canCancelIntent =
-    viewModel?.kind === "intent" &&
-    viewModel.status === "ACTIVE" &&
+  const canCancelRequest =
+    viewModel?.kind === "request" &&
+    viewModel.status === "OPEN" &&
     Boolean(user?.wallet_address) &&
-    viewModel.intent?.borrowerAddress?.toLowerCase() === user?.wallet_address?.toLowerCase();
+    viewModel.borrowerAddress?.toLowerCase() === user?.wallet_address?.toLowerCase();
 
-  const handleCancelIntent = async () => {
-    if (!viewModel || viewModel.kind !== "intent" || !user?.wallet_address) return;
+  const handleCancelRequest = async () => {
+    if (!viewModel || viewModel.kind !== "request" || !detail || detail.kind !== "request") return;
 
     try {
-      const message = `Cancel intent: ${viewModel.displayId}`;
-      const signature = await walletService.signMessage(message);
-      await intentAPI.cancel(viewModel.displayId, user.wallet_address, signature);
+      setIsCancelling(true);
+
+      const result = await contractService.cancelLoanRequest(detail.data.onchainRequestId);
+
+      await loanRequestAPI.cancel(detail.data.id, result.hash);
 
       toast({
         title: tc("success"),
         description: t("toast.cancelSuccess"),
       });
 
-      await loadData(viewModel.displayId);
+      await loadData(detail.data.id);
     } catch (err: unknown) {
+      const error = err as any;
+      const code = error?.code ?? error?.info?.error?.code;
+      const isUserRejected =
+        code === 4001 ||
+        code === "ACTION_REJECTED" ||
+        /user denied|rejected|ACTION_REJECTED/i.test(error?.message || "");
+
+      if (isUserRejected) {
+        toast({
+          title: tc("error"),
+          description: t("toast.txRejected", { defaultMessage: "Transaction rejected" }),
+        });
+        return;
+      }
+
       toast({
         title: tc("error"),
-        description: err instanceof Error ? err.message : t("toast.genericError"),
+        description: error instanceof Error ? error.message : t("toast.genericError"),
         variant: "destructive",
       });
+    } finally {
+      setIsCancelling(false);
     }
   };
 
   function statusLabel(status: string) {
-    // ko.json에 이미 dashboard.status가 있으므로 재사용 (키 경로는 프로젝트 기준에 맞게 유지)
-    // loanDetail쪽으로 옮기고 싶으면 키 재정리 가능
-    // 여기서는 loanDetail.statusLabel.* 로 쓰는 편이 컴포넌트 응집도는 더 좋음
     return t(`statusLabel.${status}`);
   }
 
@@ -231,17 +219,16 @@ export default function LoanDetailPage() {
     );
   }
 
-  const { principalToken, collateralToken, intent, dueDate, isOverdue } = viewModel;
+  const { principalToken, collateralToken, dueDate, isOverdue } = viewModel;
 
-  const principalAmount = intent ? formatAmount(intent.principalAmount, intent.principalToken.decimals) : "0";
-  const interestBps = intent?.interestBps ?? 0;
+  const principalDecimals = principalToken?.decimals ?? 18;
+  const principalAmount = formatAmount(viewModel.principalAmount, principalDecimals);
+  const interestBps = viewModel.interestBps;
   const interestRatePct = (interestBps / 100).toFixed(2);
-  const totalRepayment = intent
-    ? formatAmount(
-        (toBigInt(intent.principalAmount) + (toBigInt(intent.principalAmount) * BigInt(interestBps)) / 10000n).toString(),
-        intent.principalToken.decimals,
-      )
-    : "0";
+  const totalRepayment = formatAmount(
+    (toBigInt(viewModel.principalAmount) + (toBigInt(viewModel.principalAmount) * BigInt(interestBps)) / 10000n).toString(),
+    principalDecimals,
+  );
 
   return (
     <Shell>
@@ -321,10 +308,18 @@ export default function LoanDetailPage() {
                       <span>{t("field.dueDate")}</span>
                     </RowLabel>
                     <RowValueRight>
-                      <div>{format(dueDate, "PPP")}</div>
-                      <SmallMuted data-overdue={isOverdue}>
-                        {formatDistanceToNow(dueDate, { addSuffix: true })}
-                      </SmallMuted>
+                      {dueDate ? (
+                        <>
+                          <div>{format(dueDate, "PPP")}</div>
+                          <SmallMuted data-overdue={isOverdue}>
+                            {formatDistanceToNow(dueDate, { addSuffix: true })}
+                          </SmallMuted>
+                        </>
+                      ) : viewModel.kind === "request" && "durationDays" in viewModel ? (
+                        <div>{viewModel.durationDays} {viewModel.durationDays === 1 ? "day" : "days"}</div>
+                      ) : (
+                        <div>-</div>
+                      )}
                     </RowValueRight>
                   </Row>
                 </Rows>
@@ -342,16 +337,16 @@ export default function LoanDetailPage() {
               </CardHeader>
 
               <CardContent>
-                {collateralToken && intent ? (
+                {collateralToken ? (
                   <CollateralList>
-                    <CollateralItem key={collateralToken.address ?? "collateral-token"}>
+                    <CollateralItem>
                       <div>
                         <div>{collateralToken.symbol ?? t("unknownAsset")}</div>
                       </div>
                       <div>
                         <div>
                           <strong>
-                            {formatAmount(intent.collateralAmount, collateralToken.decimals)}
+                            {formatAmount(viewModel.collateralAmount, collateralToken.decimals)}
                           </strong>{" "}
                           {collateralToken.symbol ?? ""}
                         </div>
@@ -373,9 +368,9 @@ export default function LoanDetailPage() {
 
               <CardContent>
                 <ActionStack>
-                  {canCancelIntent && (
-                    <Button variant="destructive" onClick={handleCancelIntent}>
-                      {t("action.cancel")}
+                  {canCancelRequest && (
+                    <Button variant="destructive" onClick={handleCancelRequest} disabled={isCancelling}>
+                      {isCancelling ? t("action.cancelling", { defaultMessage: "Cancelling..." }) : t("action.cancel")}
                     </Button>
                   )}
                   <HintBox>
@@ -400,19 +395,17 @@ export default function LoanDetailPage() {
                 <Timeline>
                   <TimelineItem>
                     <div>{t("timeline.created")}</div>
-                    {(() => {
-                      const created = toDateFromValue(viewModel.createdAt);
-                      return created ? <SmallMuted>{format(created, "PPp")}</SmallMuted> : null;
-                    })()}
+                    {viewModel.createdAt && (
+                      <SmallMuted>{format(new Date(viewModel.createdAt), "PPp")}</SmallMuted>
+                    )}
                   </TimelineItem>
 
-                  <TimelineItem>
-                    <div>{t("timeline.due")}</div>
-                    {(() => {
-                      const due = toDateFromValue(viewModel.dueAt);
-                      return due ? <SmallMuted>{format(due, "PPp")}</SmallMuted> : null;
-                    })()}
-                  </TimelineItem>
+                  {dueDate && (
+                    <TimelineItem>
+                      <div>{t("timeline.due")}</div>
+                      <SmallMuted>{format(dueDate, "PPp")}</SmallMuted>
+                    </TimelineItem>
+                  )}
                 </Timeline>
               </CardContent>
             </Card>

@@ -6,8 +6,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import styled from "@emotion/styled";
 import { useTranslations } from "next-intl";
-import { Loader2, Plus, X } from "lucide-react";
-import { TypedDataEncoder, parseUnits } from "ethers";
+import { Loader2, X } from "lucide-react";
+import { parseUnits } from "ethers";
 
 import { Navbar } from "@/components/navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,34 +17,19 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 
 import { useAuth } from "@/contexts/auth-context";
-import { tokenAPI, intentAPI, type Token } from "@/lib/api";
+import { tokenAPI, loanRequestAPI, type Token } from "@/lib/api";
 import { contractService } from "@/lib/contract";
 import { useToast } from "@/hooks/use-toast";
 import { walletService } from "@/lib/wallet";
 
 type CollateralRow = {
   token_address: string;
-  amount: string; // input용
-  token_id?: string | null;
+  amount: string;
 };
 
-const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID || "1337");
-const VERIFYING_CONTRACT =
+const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID || "84532");
+const CONTRACT_ADDRESS =
   process.env.NEXT_PUBLIC_LOAN_CONTRACT_ADDRESS || process.env.NEXT_PUBLIC_LOAN_CONTRACT || "";
-
-const EIP712_TYPES = {
-  LoanIntent: [
-    { name: "borrower", type: "address" },
-    { name: "collateralToken", type: "address" },
-    { name: "collateralAmount", type: "uint256" },
-    { name: "principalToken", type: "address" },
-    { name: "principalAmount", type: "uint256" },
-    { name: "interestBps", type: "uint256" },
-    { name: "durationSeconds", type: "uint256" },
-    { name: "nonce", type: "uint256" },
-    { name: "deadline", type: "uint256" },
-  ],
-};
 
 function isPositiveNumber(value: string) {
   const n = Number(value);
@@ -149,9 +134,6 @@ export default function CreateLoanPage() {
     return token?.symbol ?? "";
   }, [tokens, principalTokenAddress]);
 
-  const addCollateral = () =>
-    setCollaterals((prev) => [...prev, { token_address: "", amount: "" }]);
-
   const removeCollateral = (index: number) =>
     setCollaterals((prev) => prev.filter((_, i) => i !== index));
 
@@ -219,10 +201,11 @@ export default function CreateLoanPage() {
 
     setIsSubmitting(true);
     try {
-      if (!VERIFYING_CONTRACT) {
-        throw new Error("Missing verifying contract address");
+      if (!CONTRACT_ADDRESS) {
+        throw new Error("Missing contract address");
       }
 
+      // 네트워크 확인
       if (CHAIN_ID !== 1 && typeof window !== "undefined" && window.ethereum) {
         const currentChainId = await window.ethereum.request({ method: "eth_chainId" });
         const expectedChainId = `0x${CHAIN_ID.toString(16)}`;
@@ -240,49 +223,30 @@ export default function CreateLoanPage() {
       }
 
       const durationSeconds = Number(durationDays) * 24 * 60 * 60;
-      const now = Math.floor(Date.now() / 1000);
-      const deadline = (now + durationSeconds).toString();
-
       const principalAmountRaw = parseUnits(loanAmount, principalToken.decimals).toString();
       const collateralAmountRaw = parseUnits(collateral.amount, collateralToken.decimals).toString();
       const interestBps = Math.round(Number(interestRate) * 100);
-      const nonce = await contractService.getNonce(user.wallet_address);
 
-      const domain = {
-        name: "PawnableLoan",
-        version: "1",
-        chainId: CHAIN_ID,
-        verifyingContract: VERIFYING_CONTRACT,
-      };
+      // 온체인 트랜잭션: createLoanRequest (담보 즉시 lock)
+      toast({
+        title: t("toast.depositingEth", { defaultMessage: "트랜잭션 처리 중..." }),
+        description: t("toast.depositingEthDesc", { defaultMessage: "담보를 컨트랙트에 lock합니다." }),
+      });
 
-      const typedMessage = {
-        borrower: user.wallet_address,
+      const result = await contractService.createLoanRequest({
         collateralToken: collateralToken.address,
         collateralAmount: collateralAmountRaw,
         principalToken: principalToken.address,
         principalAmount: principalAmountRaw,
-        interestBps: String(interestBps),
-        durationSeconds: String(durationSeconds),
-        nonce,
-        deadline,
-      };
+        interestBps,
+        durationSeconds,
+      });
 
-      const intentHash = TypedDataEncoder.hash(domain, EIP712_TYPES, typedMessage);
-      const signature = await walletService.signTypedData(domain, EIP712_TYPES, typedMessage);
-
-      // ETH 담보인 경우 컨트랙트에 ETH 예치
-      const NATIVE_TOKEN = "0x0000000000000000000000000000000000000000";
-      if (collateralToken.address.toLowerCase() === NATIVE_TOKEN) {
-        toast({
-          title: t("toast.depositingEth", { defaultMessage: "ETH 예치 중..." }),
-          description: t("toast.depositingEthDesc", { defaultMessage: "담보 ETH를 컨트랙트에 예치합니다." }),
-        });
-        await contractService.depositEth(collateralAmountRaw);
-      }
-
-      await intentAPI.create({
+      // 백엔드 인덱서에 기록
+      await loanRequestAPI.create({
         chainId: CHAIN_ID,
-        verifyingContract: VERIFYING_CONTRACT,
+        contractAddress: CONTRACT_ADDRESS,
+        onchainRequestId: result.requestId,
         borrower: user.wallet_address,
         collateralToken: collateralToken.address,
         collateralAmount: collateralAmountRaw,
@@ -290,10 +254,8 @@ export default function CreateLoanPage() {
         principalAmount: principalAmountRaw,
         interestBps,
         durationSeconds,
-        nonce,
-        deadline,
-        intentHash,
-        signature,
+        createTxHash: result.hash,
+        createdAtBlock: String(result.blockNumber || 0),
       });
 
       toast({
@@ -485,8 +447,6 @@ export default function CreateLoanPage() {
                     ) : null}
                   </CollateralRowWrap>
                 ))}
-
-                {/* 담보는 단일 항목만 사용 */}
               </Stack>
             </CardContent>
           </Card>
@@ -613,10 +573,7 @@ const IconButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
-  transition:
-    background 140ms ease,
-    color 140ms ease;
+  transition: background 140ms ease, color 140ms ease;
 
   &:hover {
     background: color-mix(in oklab, var(--card) 70%, transparent);

@@ -16,12 +16,11 @@ datasource db {
 model User {
   address    String   @id @db.VarChar(42) // 0x... EOA address
   createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
 
   // Relations
-  intents          Intent[] @relation("BorrowerIntents")
-  borrowedLoans    Loan[]   @relation("BorrowerLoans")
-  lendedLoans      Loan[]   @relation("LenderLoans")
+  loanRequests     LoanRequest[] @relation("BorrowerRequests")
+  borrowedLoans    Loan[]        @relation("BorrowerLoans")
+  lendedLoans      Loan[]        @relation("LenderLoans")
 
   @@map("users")
 }
@@ -39,8 +38,8 @@ model Token {
   indexedAt  DateTime @default(now()) @map("indexed_at")
 
   // Relations
-  intentsAsCollateral Intent[] @relation("CollateralToken")
-  intentsAsPrincipal  Intent[] @relation("PrincipalToken")
+  requestsAsCollateral LoanRequest[] @relation("CollateralToken")
+  requestsAsPrincipal  LoanRequest[] @relation("PrincipalToken")
 
   @@id([chainId, address])
   @@index([isAllowed])
@@ -48,83 +47,53 @@ model Token {
 }
 
 // =========================
-// INTENTS (EIP-712 off-chain intent)
+// LOAN REQUESTS (on-chain order book)
 // =========================
-model Intent {
-  id                String   @id @default(uuid()) @db.Uuid
+model LoanRequest {
+  id                     String   @id @default(uuid()) @db.Uuid
 
   // Chain & Contract
-  chainId           Int      @map("chain_id")
-  verifyingContract String   @map("verifying_contract") @db.VarChar(42)
+  chainId                Int      @map("chain_id")
+  contractAddress        String   @map("contract_address") @db.VarChar(42)
+  onchainRequestId       Decimal  @map("onchain_request_id") @db.Decimal(78, 0)
 
   // Borrower
-  borrowerAddress   String   @map("borrower_address") @db.VarChar(42)
+  borrowerAddress        String   @map("borrower_address") @db.VarChar(42)
 
   // Collateral
   collateralTokenAddress String   @map("collateral_token_address") @db.VarChar(42)
-  collateralAmount       Decimal  @map("collateral_amount") @db.Decimal(78, 0) // uint256
+  collateralAmount       Decimal  @map("collateral_amount") @db.Decimal(78, 0)
 
   // Principal
   principalTokenAddress  String   @map("principal_token_address") @db.VarChar(42)
-  principalAmount        Decimal  @map("principal_amount") @db.Decimal(78, 0) // uint256
+  principalAmount        Decimal  @map("principal_amount") @db.Decimal(78, 0)
 
   // Loan Terms
-  interestBps       Int      @map("interest_bps")
-  durationSeconds   Int      @map("duration_seconds")
+  interestBps            Int      @map("interest_bps")
+  durationSeconds        Int      @map("duration_seconds")
 
-  // EIP-712 Signature
-  intentNonce       Decimal  @map("intent_nonce") @db.Decimal(78, 0) // uint256
-  deadlineTimestamp BigInt   @map("deadline_timestamp")
-  intentHash        String   @map("intent_hash") @db.VarChar(66) // 0x...
-  signature         String   @db.Text // 0x...
+  // Status: OPEN | FUNDED | CANCELLED
+  status                 String   @db.VarChar(20)
 
-  // Status
-  status            String   @db.VarChar(20) // ACTIVE | UNAVAILABLE | EXPIRED | CANCELLED | EXECUTED
+  // Transaction Hashes
+  createTxHash           String   @map("create_tx_hash") @db.VarChar(66)
+  cancelTxHash           String?  @map("cancel_tx_hash") @db.VarChar(66)
 
-  // Execution Info
-  executedTxHash    String?  @map("executed_tx_hash") @db.VarChar(66)
-  executedLoanId    Decimal? @map("executed_loan_id") @db.Decimal(78, 0)
-
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  // Indexer Metadata
+  createdAtBlock         BigInt   @map("created_at_block")
+  indexedAt              DateTime @default(now()) @map("indexed_at")
 
   // Relations
-  borrower          User     @relation("BorrowerIntents", fields: [borrowerAddress], references: [address])
-  collateralToken   Token    @relation("CollateralToken", fields: [chainId, collateralTokenAddress], references: [chainId, address])
-  principalToken    Token    @relation("PrincipalToken", fields: [chainId, principalTokenAddress], references: [chainId, address])
+  borrower               User    @relation("BorrowerRequests", fields: [borrowerAddress], references: [address])
+  collateralToken        Token   @relation("CollateralToken", fields: [chainId, collateralTokenAddress], references: [chainId, address])
+  principalToken         Token   @relation("PrincipalToken", fields: [chainId, principalTokenAddress], references: [chainId, address])
+  loan                   Loan?
 
-  snapshots         IntentStateSnapshot[]
-  loan              Loan?
-
-  @@unique([chainId, verifyingContract, intentHash])
+  @@unique([chainId, contractAddress, onchainRequestId])
   @@index([status])
   @@index([borrowerAddress])
   @@index([chainId, status])
-  @@index([deadlineTimestamp])
-  @@map("intents")
-}
-
-// =========================
-// INTENT STATE CACHE
-// =========================
-model IntentStateSnapshot {
-  id                   String   @id @default(uuid()) @db.Uuid
-  intentId             String   @map("intent_id") @db.Uuid
-
-  blockNumber          BigInt   @map("block_number")
-  checkedAt            DateTime @default(now()) @map("checked_at")
-
-  collateralBalance    Decimal  @map("collateral_balance") @db.Decimal(78, 0)
-  collateralAllowance  Decimal  @map("collateral_allowance") @db.Decimal(78, 0) // 0 for native
-
-  derivedStatus        String   @map("derived_status") @db.VarChar(20) // ACTIVE | UNAVAILABLE
-  reason               String?  @db.Text
-
-  // Relations
-  intent               Intent   @relation(fields: [intentId], references: [id], onDelete: Cascade)
-
-  @@index([intentId, checkedAt])
-  @@map("intent_state_snapshots")
+  @@map("loan_requests")
 }
 
 // =========================
@@ -135,11 +104,11 @@ model Loan {
 
   // Chain & Contract
   chainId           Int      @map("chain_id")
-  verifyingContract String   @map("verifying_contract") @db.VarChar(42)
-  loanId            Decimal  @map("loan_id") @db.Decimal(78, 0) // on-chain loanId
+  contractAddress   String   @map("contract_address") @db.VarChar(42)
+  onchainLoanId     Decimal  @map("onchain_loan_id") @db.Decimal(78, 0)
 
-  // Intent Reference
-  intentId          String?  @unique @map("intent_id") @db.Uuid
+  // Request Reference
+  requestId         String?  @unique @map("request_id") @db.Uuid
 
   // Parties
   borrowerAddress   String   @map("borrower_address") @db.VarChar(42)
@@ -149,23 +118,23 @@ model Loan {
   startTimestamp    BigInt   @map("start_timestamp")
   dueTimestamp      BigInt   @map("due_timestamp")
 
-  // Status
-  status            String   @db.VarChar(20) // ONGOING | REPAID | CLAIMED
+  // Status: ONGOING | REPAID | CLAIMED
+  status            String   @db.VarChar(20)
 
   // Transaction Hashes
-  startTxHash       String   @map("start_tx_hash") @db.VarChar(66)
-  repaidTxHash      String?  @map("repaid_tx_hash") @db.VarChar(66)
-  claimedTxHash     String?  @map("claimed_tx_hash") @db.VarChar(66)
+  fundTxHash        String   @map("fund_tx_hash") @db.VarChar(66)
+  repayTxHash       String?  @map("repay_tx_hash") @db.VarChar(66)
+  claimTxHash       String?  @map("claim_tx_hash") @db.VarChar(66)
 
+  // Indexer Metadata
   indexedAt         DateTime @default(now()) @map("indexed_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
 
   // Relations
-  intent            Intent?  @relation(fields: [intentId], references: [id])
-  borrower          User     @relation("BorrowerLoans", fields: [borrowerAddress], references: [address])
-  lender            User     @relation("LenderLoans", fields: [lenderAddress], references: [address])
+  request           LoanRequest? @relation(fields: [requestId], references: [id])
+  borrower          User         @relation("BorrowerLoans", fields: [borrowerAddress], references: [address])
+  lender            User         @relation("LenderLoans", fields: [lenderAddress], references: [address])
 
-  @@unique([chainId, loanId])
+  @@unique([chainId, onchainLoanId])
   @@index([status])
   @@index([borrowerAddress])
   @@index([lenderAddress])

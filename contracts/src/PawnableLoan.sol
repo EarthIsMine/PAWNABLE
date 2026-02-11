@@ -4,13 +4,11 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /// @title PawnableLoan
 /// @notice 담보 기반 P2P 대출 컨트랙트 (가격 청산 없음, 시간 기반 청산)
-/// @dev EIP-712 서명으로 차입자 의사 표현, 대출자가 executeLoan 호출로 실행
-contract PawnableLoan is EIP712, ReentrancyGuard {
+/// @dev 차입자가 온체인에 직접 대출 요청 생성, 대출자가 자금 제공
+contract PawnableLoan is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     // ========================
@@ -19,13 +17,15 @@ contract PawnableLoan is EIP712, ReentrancyGuard {
 
     address public constant NATIVE_TOKEN = address(0);
 
-    bytes32 public constant LOAN_INTENT_TYPEHASH = keccak256(
-        "LoanIntent(address borrower,address collateralToken,uint256 collateralAmount,address principalToken,uint256 principalAmount,uint256 interestBps,uint256 durationSeconds,uint256 nonce,uint256 deadline)"
-    );
-
     // ========================
     // Types
     // ========================
+
+    enum RequestStatus {
+        OPEN,
+        FUNDED,
+        CANCELLED
+    }
 
     enum LoanStatus {
         ONGOING,
@@ -33,7 +33,19 @@ contract PawnableLoan is EIP712, ReentrancyGuard {
         CLAIMED
     }
 
+    struct LoanRequest {
+        address borrower;
+        address collateralToken;
+        uint256 collateralAmount;
+        address principalToken;
+        uint256 principalAmount;
+        uint256 interestBps;
+        uint256 duration;
+        RequestStatus status;
+    }
+
     struct Loan {
+        uint256 requestId;
         address borrower;
         address lender;
         address collateralToken;
@@ -50,176 +62,156 @@ contract PawnableLoan is EIP712, ReentrancyGuard {
     // State
     // ========================
 
+    uint256 public nextRequestId;
     uint256 public nextLoanId;
+    mapping(uint256 => LoanRequest) public loanRequests;
     mapping(uint256 => Loan) public loans;
-    mapping(address => uint256) public nonces;
-    mapping(bytes32 => bool) public usedIntentHashes;
-
-    /// @notice ETH 예치금 (native 담보용)
-    mapping(address => uint256) public ethDeposits;
 
     // ========================
     // Events
     // ========================
 
-    event LoanExecuted(
-        uint256 indexed loanId,
+    event LoanRequestCreated(
+        uint256 indexed requestId,
         address indexed borrower,
-        address indexed lender,
         address collateralToken,
         uint256 collateralAmount,
         address principalToken,
         uint256 principalAmount,
         uint256 interestBps,
+        uint256 duration
+    );
+
+    event LoanRequestCancelled(uint256 indexed requestId, address indexed borrower);
+
+    event LoanFunded(
+        uint256 indexed loanId,
+        uint256 indexed requestId,
+        address indexed lender,
+        address borrower,
         uint256 startTimestamp,
         uint256 dueTimestamp
     );
 
     event LoanRepaid(uint256 indexed loanId, address indexed borrower, uint256 repayAmount);
     event CollateralClaimed(uint256 indexed loanId, address indexed lender, uint256 collateralAmount);
-    event NonceIncremented(address indexed borrower, uint256 newNonce);
-    event EthDeposited(address indexed user, uint256 amount);
-    event EthWithdrawn(address indexed user, uint256 amount);
 
     // ========================
-    // Constructor
+    // 대출 요청 생성 (Borrower 호출)
     // ========================
 
-    constructor() EIP712("PawnableLoan", "1") {}
-
-    // ========================
-    // ETH 예치 (native 담보용)
-    // ========================
-
-    /// @notice ETH를 예치하여 native 담보로 사용 가능하게 함
-    function depositEth() external payable {
-        require(msg.value > 0, "Zero deposit");
-        ethDeposits[msg.sender] += msg.value;
-        emit EthDeposited(msg.sender, msg.value);
-    }
-
-    /// @notice 미사용 ETH 예치금 인출
-    function withdrawEth(uint256 amount) external nonReentrant {
-        require(ethDeposits[msg.sender] >= amount, "Insufficient deposit");
-        ethDeposits[msg.sender] -= amount;
-        (bool success,) = msg.sender.call{value: amount}("");
-        require(success, "ETH transfer failed");
-        emit EthWithdrawn(msg.sender, amount);
-    }
-
-    // ========================
-    // Nonce 관리
-    // ========================
-
-    /// @notice nonce 증가로 기존 미실행 intent 전부 무효화
-    function incrementNonce() external {
-        nonces[msg.sender]++;
-        emit NonceIncremented(msg.sender, nonces[msg.sender]);
-    }
-
-    // ========================
-    // 대출 실행 (Lender 호출)
-    // ========================
-
-    /// @notice EIP-712 서명된 intent를 실행하여 대출 생성
-    /// @dev lender가 호출. 담보 lock + 원금 이동 + loan 생성
-    function executeLoan(
-        address borrower,
+    /// @notice 담보를 lock하고 대출 요청 생성
+    function createLoanRequest(
         address collateralToken,
         uint256 collateralAmount,
         address principalToken,
         uint256 principalAmount,
         uint256 interestBps,
-        uint256 durationSeconds,
-        uint256 nonce,
-        uint256 deadline,
-        bytes calldata signature
-    ) external payable nonReentrant returns (uint256 loanId) {
-        // 1. deadline 검증
-        require(block.timestamp <= deadline, "Intent expired");
+        uint256 duration
+    ) external payable nonReentrant returns (uint256 requestId) {
+        require(collateralAmount > 0, "Zero collateral");
+        require(principalAmount > 0, "Zero principal");
+        require(duration > 0, "Zero duration");
 
-        // 2. nonce 검증
-        require(nonce == nonces[borrower], "Invalid nonce");
-
-        // 3. EIP-712 서명 검증
-        bytes32 structHash = keccak256(
-            abi.encode(
-                LOAN_INTENT_TYPEHASH,
-                borrower,
-                collateralToken,
-                collateralAmount,
-                principalToken,
-                principalAmount,
-                interestBps,
-                durationSeconds,
-                nonce,
-                deadline
-            )
-        );
-
-        bytes32 hash = _hashTypedDataV4(structHash);
-        require(!usedIntentHashes[hash], "Intent already used");
-
-        address signer = ECDSA.recover(hash, signature);
-        require(signer == borrower, "Invalid signature");
-
-        // 4. intent 사용 처리
-        usedIntentHashes[hash] = true;
-        nonces[borrower]++;
-
-        // 5. 담보 lock
+        // 담보 lock
         if (collateralToken == NATIVE_TOKEN) {
-            require(ethDeposits[borrower] >= collateralAmount, "Insufficient ETH deposit");
-            ethDeposits[borrower] -= collateralAmount;
+            require(msg.value == collateralAmount, "Incorrect ETH amount");
         } else {
-            IERC20(collateralToken).safeTransferFrom(borrower, address(this), collateralAmount);
+            require(msg.value == 0, "ETH sent for ERC20 collateral");
+            IERC20(collateralToken).safeTransferFrom(msg.sender, address(this), collateralAmount);
         }
 
-        // 6. 원금을 borrower에게 전달
-        if (principalToken == NATIVE_TOKEN) {
-            require(msg.value >= principalAmount, "Insufficient ETH sent");
-            (bool success,) = borrower.call{value: principalAmount}("");
-            require(success, "ETH transfer to borrower failed");
-            // 잔돈 반환
-            if (msg.value > principalAmount) {
-                (bool refundSuccess,) = msg.sender.call{value: msg.value - principalAmount}("");
-                require(refundSuccess, "ETH refund failed");
-            }
-        } else {
-            IERC20(principalToken).safeTransferFrom(msg.sender, borrower, principalAmount);
-        }
-
-        // 7. Loan 생성
-        loanId = nextLoanId++;
-        loans[loanId] = Loan({
-            borrower: borrower,
-            lender: msg.sender,
+        requestId = nextRequestId++;
+        loanRequests[requestId] = LoanRequest({
+            borrower: msg.sender,
             collateralToken: collateralToken,
             collateralAmount: collateralAmount,
             principalToken: principalToken,
             principalAmount: principalAmount,
             interestBps: interestBps,
-            startTimestamp: block.timestamp,
-            dueTimestamp: block.timestamp + durationSeconds,
-            status: LoanStatus.ONGOING
+            duration: duration,
+            status: RequestStatus.OPEN
         });
 
-        emit LoanExecuted(
-            loanId,
-            borrower,
+        emit LoanRequestCreated(
+            requestId,
             msg.sender,
             collateralToken,
             collateralAmount,
             principalToken,
             principalAmount,
             interestBps,
-            block.timestamp,
-            block.timestamp + durationSeconds
+            duration
         );
     }
 
     // ========================
-    // 상환 (누구나 호출 가능, 보통 Borrower)
+    // 대출 요청 취소 (Borrower 호출)
+    // ========================
+
+    /// @notice OPEN 상태의 요청 취소, 담보 반환
+    function cancelLoanRequest(uint256 requestId) external nonReentrant {
+        LoanRequest storage req = loanRequests[requestId];
+        require(req.borrower == msg.sender, "Not borrower");
+        require(req.status == RequestStatus.OPEN, "Not open");
+
+        req.status = RequestStatus.CANCELLED;
+
+        // 담보 반환
+        if (req.collateralToken == NATIVE_TOKEN) {
+            (bool success,) = msg.sender.call{value: req.collateralAmount}("");
+            require(success, "ETH transfer failed");
+        } else {
+            IERC20(req.collateralToken).safeTransfer(msg.sender, req.collateralAmount);
+        }
+
+        emit LoanRequestCancelled(requestId, msg.sender);
+    }
+
+    // ========================
+    // 자금 제공 (Lender 호출)
+    // ========================
+
+    /// @notice 원금을 borrower에게 전송하고 대출 생성
+    function fundLoan(uint256 requestId) external payable nonReentrant returns (uint256 loanId) {
+        LoanRequest storage req = loanRequests[requestId];
+        require(req.status == RequestStatus.OPEN, "Not open");
+        require(msg.sender != req.borrower, "Cannot self-fund");
+
+        req.status = RequestStatus.FUNDED;
+
+        // 원금 → borrower
+        if (req.principalToken == NATIVE_TOKEN) {
+            require(msg.value == req.principalAmount, "Incorrect ETH amount");
+            (bool success,) = req.borrower.call{value: req.principalAmount}("");
+            require(success, "ETH transfer failed");
+        } else {
+            require(msg.value == 0, "ETH sent for ERC20 principal");
+            IERC20(req.principalToken).safeTransferFrom(msg.sender, req.borrower, req.principalAmount);
+        }
+
+        // Loan 생성
+        loanId = nextLoanId++;
+        uint256 dueTimestamp = block.timestamp + req.duration;
+        loans[loanId] = Loan({
+            requestId: requestId,
+            borrower: req.borrower,
+            lender: msg.sender,
+            collateralToken: req.collateralToken,
+            collateralAmount: req.collateralAmount,
+            principalToken: req.principalToken,
+            principalAmount: req.principalAmount,
+            interestBps: req.interestBps,
+            startTimestamp: block.timestamp,
+            dueTimestamp: dueTimestamp,
+            status: LoanStatus.ONGOING
+        });
+
+        emit LoanFunded(loanId, requestId, msg.sender, req.borrower, block.timestamp, dueTimestamp);
+    }
+
+    // ========================
+    // 상환 (기한 내)
     // ========================
 
     /// @notice 기한 내 상환 → 원금+이자 lender에게, 담보 borrower에게 반환
@@ -257,10 +249,10 @@ contract PawnableLoan is EIP712, ReentrancyGuard {
     }
 
     // ========================
-    // 담보 청산 (누구나 호출 가능, 봇이 대신 호출)
+    // 담보 청산 (기한 초과)
     // ========================
 
-    /// @notice 기한 초과 + 미상환 → 담보를 lender에게 전달
+    /// @notice 기한 초과 + 미상환 → 담보를 lender에게 전달 (누구나 호출 가능)
     function claimCollateral(uint256 loanId) external nonReentrant {
         Loan storage loan = loans[loanId];
         require(loan.status == LoanStatus.ONGOING, "Loan not ongoing");
@@ -282,6 +274,10 @@ contract PawnableLoan is EIP712, ReentrancyGuard {
     // View
     // ========================
 
+    function getLoanRequest(uint256 requestId) external view returns (LoanRequest memory) {
+        return loanRequests[requestId];
+    }
+
     function getLoan(uint256 loanId) external view returns (Loan memory) {
         return loans[loanId];
     }
@@ -289,44 +285,5 @@ contract PawnableLoan is EIP712, ReentrancyGuard {
     function getRepayAmount(uint256 loanId) external view returns (uint256) {
         Loan storage loan = loans[loanId];
         return loan.principalAmount + (loan.principalAmount * loan.interestBps / 10000);
-    }
-
-    function getIntentHash(
-        address borrower,
-        address collateralToken,
-        uint256 collateralAmount,
-        address principalToken,
-        uint256 principalAmount,
-        uint256 interestBps,
-        uint256 durationSeconds,
-        uint256 nonce,
-        uint256 deadline
-    ) external view returns (bytes32) {
-        return _hashTypedDataV4(
-            keccak256(
-                abi.encode(
-                    LOAN_INTENT_TYPEHASH,
-                    borrower,
-                    collateralToken,
-                    collateralAmount,
-                    principalToken,
-                    principalAmount,
-                    interestBps,
-                    durationSeconds,
-                    nonce,
-                    deadline
-                )
-            )
-        );
-    }
-
-    // ========================
-    // Receive
-    // ========================
-
-    /// @notice 직접 ETH 전송 시 자동 예치
-    receive() external payable {
-        ethDeposits[msg.sender] += msg.value;
-        emit EthDeposited(msg.sender, msg.value);
     }
 }

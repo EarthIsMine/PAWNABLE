@@ -1,5 +1,6 @@
 import prisma from '../config/database';
-import { IntentStatus, LoanStatus } from '../types';
+import { LoanRequestStatus, LoanStatus } from '../types';
+import { IndexLoanFundedData } from '../types';
 
 interface GetLoansFilter {
   status?: string;
@@ -7,18 +8,6 @@ interface GetLoansFilter {
   lender?: string;
   limit: number;
   offset: number;
-}
-
-interface CreateLoanData {
-  chainId: number;
-  verifyingContract: string;
-  loanId: string;
-  intentId?: string;
-  borrower: string;
-  lender: string;
-  startTimestamp: string;
-  dueTimestamp: string;
-  startTxHash: string;
 }
 
 export const getLoans = async (filters: GetLoansFilter) => {
@@ -42,7 +31,7 @@ export const getLoans = async (filters: GetLoansFilter) => {
       include: {
         borrower: true,
         lender: true,
-        intent: {
+        request: {
           include: {
             collateralToken: true,
             principalToken: true,
@@ -70,7 +59,7 @@ export const getLoanById = async (id: string) => {
     include: {
       borrower: true,
       lender: true,
-      intent: {
+      request: {
         include: {
           collateralToken: true,
           principalToken: true,
@@ -80,8 +69,7 @@ export const getLoanById = async (id: string) => {
   });
 };
 
-export const createLoan = async (data: CreateLoanData) => {
-  // 원자적 트랜잭션: User upsert + Loan 생성 + Intent 상태 업데이트
+export const createLoan = async (data: IndexLoanFundedData) => {
   return await prisma.$transaction(async (tx) => {
     // Ensure users exist
     await Promise.all([
@@ -97,50 +85,42 @@ export const createLoan = async (data: CreateLoanData) => {
       }),
     ]);
 
-    // Intent가 연결된 경우 상태 검증 및 업데이트
-    if (data.intentId) {
-      const intent = await tx.intent.findUnique({ where: { id: data.intentId } });
+    // Find linked LoanRequest by onchain ID and update to FUNDED
+    const loanRequest = await tx.loanRequest.findUnique({
+      where: {
+        chainId_contractAddress_onchainRequestId: {
+          chainId: data.chainId,
+          contractAddress: data.contractAddress.toLowerCase(),
+          onchainRequestId: data.onchainRequestId,
+        },
+      },
+    });
 
-      if (!intent) {
-        throw new Error(`Intent ${data.intentId} not found`);
-      }
-
-      if (![IntentStatus.ACTIVE, IntentStatus.EXECUTED].includes(intent.status as IntentStatus)) {
-        throw new Error(`Intent is not active (current: ${intent.status})`);
-      }
-
-      // Intent를 EXECUTED로 업데이트
-      // 이미 EXECUTED인 경우에는 업데이트를 생략 (중복 실행 방지)
-      if (intent.status === IntentStatus.ACTIVE) {
-        await tx.intent.update({
-          where: { id: data.intentId },
-          data: {
-            status: IntentStatus.EXECUTED,
-            executedTxHash: data.startTxHash,
-            executedLoanId: data.loanId,
-          },
-        });
-      }
+    if (loanRequest && loanRequest.status === LoanRequestStatus.OPEN) {
+      await tx.loanRequest.update({
+        where: { id: loanRequest.id },
+        data: { status: LoanRequestStatus.FUNDED },
+      });
     }
 
     // Create loan
     const loan = await tx.loan.create({
       data: {
         chainId: data.chainId,
-        verifyingContract: data.verifyingContract.toLowerCase(),
-        loanId: data.loanId,
-        intentId: data.intentId || null,
+        contractAddress: data.contractAddress.toLowerCase(),
+        onchainLoanId: data.onchainLoanId,
+        requestId: loanRequest?.id || null,
         borrowerAddress: data.borrower.toLowerCase(),
         lenderAddress: data.lender.toLowerCase(),
         startTimestamp: BigInt(data.startTimestamp),
         dueTimestamp: BigInt(data.dueTimestamp),
         status: LoanStatus.ONGOING,
-        startTxHash: data.startTxHash,
+        fundTxHash: data.fundTxHash,
       },
       include: {
         borrower: true,
         lender: true,
-        intent: true,
+        request: true,
       },
     });
 
@@ -148,24 +128,23 @@ export const createLoan = async (data: CreateLoanData) => {
   });
 };
 
-export const updateLoanStatus = async (id: string, status: string, txHash?: string) => {
+export const updateLoanStatus = async (id: string, status: string, txHash: string) => {
   const loan = await prisma.loan.findUnique({ where: { id } });
 
   if (!loan) {
     throw new Error('Loan not found');
   }
 
-  // 상태 전이 검증
   if (loan.status !== LoanStatus.ONGOING) {
     throw new Error(`Loan is already ${loan.status}, cannot transition to ${status}`);
   }
 
   const updateData: any = { status };
 
-  if (status === LoanStatus.REPAID && txHash) {
-    updateData.repaidTxHash = txHash;
-  } else if (status === LoanStatus.CLAIMED && txHash) {
-    updateData.claimedTxHash = txHash;
+  if (status === LoanStatus.REPAID) {
+    updateData.repayTxHash = txHash;
+  } else if (status === LoanStatus.CLAIMED) {
+    updateData.claimTxHash = txHash;
   }
 
   return await prisma.loan.update({

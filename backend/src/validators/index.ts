@@ -5,27 +5,11 @@ const bytes32Hex = z.string().regex(/^0x[0-9a-fA-F]{64}$/, 'Invalid bytes32 hex'
 const uint256String = z.string().regex(/^\d+$/, 'Must be a numeric string (uint256)');
 
 // ========================
-// Intent Validators
+// Loan Request Validators
 // ========================
 
-export const createIntentSchema = z.object({
-  chainId: z.number().int().positive(),
-  verifyingContract: evmAddress,
-  borrower: evmAddress,
-  collateralToken: evmAddress,
-  collateralAmount: uint256String,
-  principalToken: evmAddress,
-  principalAmount: uint256String,
-  interestBps: z.number().int().min(0).max(10000),
-  durationSeconds: z.number().int().positive(),
-  nonce: uint256String,
-  deadline: uint256String,
-  intentHash: bytes32Hex,
-  signature: z.string().regex(/^0x[0-9a-fA-F]+$/, 'Invalid signature hex'),
-});
-
-export const getIntentsQuerySchema = z.object({
-  status: z.enum(['ACTIVE', 'UNAVAILABLE', 'EXPIRED', 'CANCELLED', 'EXECUTED']).optional(),
+export const getLoanRequestsQuerySchema = z.object({
+  status: z.enum(['OPEN', 'FUNDED', 'CANCELLED']).optional(),
   borrower: evmAddress.optional(),
   collateralToken: evmAddress.optional(),
   principalToken: evmAddress.optional(),
@@ -33,30 +17,39 @@ export const getIntentsQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
-export const cancelIntentSchema = z.object({
-  borrowerAddress: evmAddress,
-  signature: z.string().regex(/^0x[0-9a-fA-F]+$/, 'Invalid signature hex'),
+export const indexLoanRequestSchema = z.object({
+  chainId: z.number().int().positive(),
+  contractAddress: evmAddress,
+  onchainRequestId: uint256String,
+  borrower: evmAddress,
+  collateralToken: evmAddress,
+  collateralAmount: uint256String,
+  principalToken: evmAddress,
+  principalAmount: uint256String,
+  interestBps: z.number().int().min(0).max(10000),
+  durationSeconds: z.number().int().positive(),
+  createTxHash: bytes32Hex,
+  createdAtBlock: uint256String,
 });
 
-export const executeIntentSchema = z.object({
-  txHash: bytes32Hex,
-  loanId: uint256String,
+export const indexLoanRequestCancelSchema = z.object({
+  cancelTxHash: bytes32Hex,
 });
 
 // ========================
 // Loan Validators
 // ========================
 
-export const createLoanSchema = z.object({
+export const indexLoanFundedSchema = z.object({
   chainId: z.number().int().positive(),
-  verifyingContract: evmAddress,
-  loanId: uint256String,
-  intentId: z.string().uuid().optional(),
+  contractAddress: evmAddress,
+  onchainLoanId: uint256String,
+  onchainRequestId: uint256String,
   borrower: evmAddress,
   lender: evmAddress,
   startTimestamp: uint256String,
   dueTimestamp: uint256String,
-  startTxHash: bytes32Hex,
+  fundTxHash: bytes32Hex,
 });
 
 export const getLoansQuerySchema = z.object({
@@ -69,7 +62,7 @@ export const getLoansQuerySchema = z.object({
 
 export const updateLoanStatusSchema = z.object({
   status: z.enum(['REPAID', 'CLAIMED']),
-  txHash: bytes32Hex.optional(),
+  txHash: bytes32Hex,
 });
 
 // ========================

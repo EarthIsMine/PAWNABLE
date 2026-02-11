@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import styled from "@emotion/styled";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { formatDistanceToNow } from "date-fns";
-import { ko, enUS } from "date-fns/locale";
 import { Calendar, Coins, Loader2, TrendingUp } from "lucide-react";
 import { formatUnits } from "ethers";
 
@@ -31,16 +29,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { intentAPI, loanAPI, type Intent } from "@/lib/api";
+import { loanRequestAPI, loanAPI, type LoanRequest } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { getLocale } from "@/lib/locale";
 import { contractService } from "@/lib/contract";
 import { walletService } from "@/lib/wallet";
 
 export default function MarketplacePage() {
-  const [intents, setIntents] = useState<Intent[]>([]);
-  const [selectedIntent, setSelectedIntent] = useState<Intent | null>(null);
+  const [requests, setRequests] = useState<LoanRequest[]>([]);
+  const [selectedRequest, setSelectedRequest] = useState<LoanRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,10 +47,6 @@ export default function MarketplacePage() {
   const router = useRouter();
 
   const t = useTranslations("marketplace");
-  const common = useTranslations("common");
-
-  const locale = getLocale();
-  const dateLocale = useMemo(() => (locale === "ko" ? ko : enUS), [locale]);
 
   useEffect(() => {
     void loadData();
@@ -64,8 +57,8 @@ export default function MarketplacePage() {
     try {
       setIsLoading(true);
 
-      const res = await intentAPI.getAll({ status: "ACTIVE", limit: 50 });
-      setIntents(res.intents ?? []);
+      const res = await loanRequestAPI.getAll({ status: "OPEN", limit: 50 });
+      setRequests(res.loanRequests ?? []);
     } catch (error: any) {
       console.error("Failed to load marketplace:", error);
       toast({
@@ -78,7 +71,7 @@ export default function MarketplacePage() {
     }
   };
 
-  const openLendModal = (intent: Intent) => {
+  const openLendModal = (request: LoanRequest) => {
     if (!isConnected) {
       toast({
         title: t("toast.connectWallet"),
@@ -88,7 +81,7 @@ export default function MarketplacePage() {
       return;
     }
 
-    setSelectedIntent(intent);
+    setSelectedRequest(request);
     setIsModalOpen(true);
   };
 
@@ -97,11 +90,11 @@ export default function MarketplacePage() {
   };
 
   const proceedLend = () => {
-    if (!selectedIntent) return;
-    void executeLoan(selectedIntent);
+    if (!selectedRequest) return;
+    void fundLoan(selectedRequest);
   };
 
-  const executeLoan = async (intent: Intent) => {
+  const fundLoan = async (request: LoanRequest) => {
     try {
       if (!isConnected) {
         toast({
@@ -114,55 +107,36 @@ export default function MarketplacePage() {
 
       setIsExecuting(true);
 
-      const principalToken = intent.principalToken;
-      const principalIsNative = Boolean(principalToken?.isNative);
-
-      // ERC20 원금인 경우 approve 먼저 실행
-      if (!principalIsNative) {
-        toast({
-          title: t("toast.approving", { defaultMessage: "승인 중..." }),
-          description: t("toast.approvingDesc", { defaultMessage: "토큰 사용을 승인합니다." }),
-        });
-        await contractService.approveTokenForLoan(
-          intent.principalTokenAddress,
-          intent.principalAmount,
-        );
-      }
-
-      const result = await contractService.executeLoan({
-        borrower: intent.borrowerAddress,
-        collateralToken: intent.collateralTokenAddress,
-        collateralAmount: intent.collateralAmount,
-        principalToken: intent.principalTokenAddress,
-        principalAmount: intent.principalAmount,
-        interestBps: intent.interestBps,
-        durationSeconds: intent.durationSeconds,
-        nonce: intent.intentNonce,
-        deadline: intent.deadlineTimestamp,
-        signature: intent.signature,
-        principalIsNative,
+      const result = await contractService.fundLoan({
+        requestId: request.onchainRequestId,
+        principalToken: request.principalTokenAddress,
+        principalAmount: request.principalAmount,
       });
 
       const loanId = result.loanId || "0";
-      await intentAPI.execute(intent.id, result.hash, loanId);
 
       if (loanId !== "0") {
         const lenderAddress = (await walletService.getAccount()) || "";
         const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID || 0);
-        const verifyingContract =
+        const contractAddress =
           process.env.NEXT_PUBLIC_LOAN_CONTRACT_ADDRESS || process.env.NEXT_PUBLIC_LOAN_CONTRACT || "";
 
-        if (chainId && verifyingContract && lenderAddress) {
-          await loanAPI.createIndex({
+        if (chainId && contractAddress && lenderAddress) {
+          const startTimestamp = String(Math.floor(Date.now() / 1000));
+          const dueTimestamp = String(
+            Math.floor(Date.now() / 1000) + request.durationSeconds,
+          );
+
+          await loanAPI.create({
             chainId,
-            verifyingContract,
-            loanId,
-            intentId: intent.id,
-            borrower: intent.borrowerAddress,
+            contractAddress,
+            onchainLoanId: loanId,
+            onchainRequestId: request.onchainRequestId,
+            borrower: request.borrowerAddress,
             lender: lenderAddress,
-            startTimestamp: String(Math.floor(Date.now() / 1000)),
-            dueTimestamp: intent.deadlineTimestamp,
-            startTxHash: result.hash,
+            startTimestamp,
+            dueTimestamp,
+            fundTxHash: result.hash,
           });
         }
       }
@@ -173,7 +147,7 @@ export default function MarketplacePage() {
       });
 
       setIsModalOpen(false);
-      router.push(result.loanId ? `/loan/${result.loanId}` : `/loan/${intent.id}`);
+      router.push(`/loan/${request.id}`);
     } catch (error: any) {
       const message = error?.message || "";
       const code = error?.code ?? error?.info?.error?.code;
@@ -214,7 +188,7 @@ export default function MarketplacePage() {
           <LoadingWrap>
             <SpinIcon aria-hidden="true" />
           </LoadingWrap>
-        ) : intents.length === 0 ? (
+        ) : requests.length === 0 ? (
           <Card>
             <EmptyState>
               <EmptyIcon aria-hidden="true" />
@@ -231,26 +205,26 @@ export default function MarketplacePage() {
         ) : (
           <>
             <Controls>
-              <CountText>{t("count", { count: intents.length })}</CountText>
+              <CountText>{t("count", { count: requests.length })}</CountText>
             </Controls>
 
             <Grid>
-              {intents.map((intent) => {
-                const principalToken = intent.principalToken;
-                const collateralToken = intent.collateralToken;
+              {requests.map((request) => {
+                const principalToken = request.principalToken;
+                const collateralToken = request.collateralToken;
                 const principalAmount = principalToken
-                  ? formatUnits(BigInt(intent.principalAmount), principalToken.decimals)
-                  : intent.principalAmount;
+                  ? formatUnits(BigInt(request.principalAmount), principalToken.decimals)
+                  : request.principalAmount;
                 const totalRepayRaw =
-                  BigInt(intent.principalAmount) +
-                  (BigInt(intent.principalAmount) * BigInt(intent.interestBps)) / 10000n;
+                  BigInt(request.principalAmount) +
+                  (BigInt(request.principalAmount) * BigInt(request.interestBps)) / 10000n;
                 const totalRepay = principalToken
                   ? formatUnits(totalRepayRaw, principalToken.decimals)
                   : totalRepayRaw.toString();
-                const dueDate = new Date(Number(intent.deadlineTimestamp) * 1000);
+                const durationDays = Math.ceil(request.durationSeconds / 86400);
 
                 return (
-                  <LoanCard key={intent.id}>
+                  <LoanCard key={request.id}>
                     <CardHeader>
                       <TopRow>
                         <AmountBlock>
@@ -260,7 +234,7 @@ export default function MarketplacePage() {
                           <AssetName>{principalToken?.symbol || t("card.principal")}</AssetName>
                         </AmountBlock>
 
-                        <Badge variant="outline">{String(intent.status).toUpperCase()}</Badge>
+                        <Badge variant="outline">{String(request.status).toUpperCase()}</Badge>
                       </TopRow>
 
                       <CardDescription>{t("card.borrowerSetsRate")}</CardDescription>
@@ -274,7 +248,7 @@ export default function MarketplacePage() {
                           </MetaIcon>
                           <MetaText>
                             <MetaLabel>{t("card.apr")}</MetaLabel>
-                            <MetaValueAccent>{(intent.interestBps / 100).toFixed(2)}%</MetaValueAccent>
+                            <MetaValueAccent>{(request.interestBps / 100).toFixed(2)}%</MetaValueAccent>
                           </MetaText>
                         </MetaItem>
 
@@ -297,10 +271,7 @@ export default function MarketplacePage() {
                           <MetaText>
                             <MetaLabel>{t("card.due")}</MetaLabel>
                             <MetaValue>
-                              {formatDistanceToNow(dueDate, {
-                                addSuffix: true,
-                                locale: dateLocale,
-                              })}
+                              {durationDays} {durationDays === 1 ? "day" : "days"}
                             </MetaValue>
                           </MetaText>
                         </MetaItem>
@@ -310,8 +281,8 @@ export default function MarketplacePage() {
                         <CollateralBox>
                           <CollateralTitle>{t("card.collateral")}</CollateralTitle>
                           <CollateralList>
-                            <CollateralItem key={intent.id}>
-                              {formatUnits(BigInt(intent.collateralAmount), collateralToken.decimals)}{" "}
+                            <CollateralItem key={request.id}>
+                              {formatUnits(BigInt(request.collateralAmount), collateralToken.decimals)}{" "}
                               {collateralToken.symbol || ""}
                             </CollateralItem>
                           </CollateralList>
@@ -324,7 +295,7 @@ export default function MarketplacePage() {
                         size="lg"
                         tone="accent"
                         fullWidth
-                        onClick={() => openLendModal(intent)}
+                        onClick={() => openLendModal(request)}
                       >
                         {isConnected ? t("card.lendNow") : t("card.walletRequired")}
                       </Button>
@@ -344,19 +315,19 @@ export default function MarketplacePage() {
             <AlertDialogDescription>{t("modal.description")}</AlertDialogDescription>
           </AlertDialogHeader>
 
-          {selectedIntent && (() => {
-            const principalToken = selectedIntent.principalToken;
-            const collateralToken = selectedIntent.collateralToken;
+          {selectedRequest && (() => {
+            const principalToken = selectedRequest.principalToken;
+            const collateralToken = selectedRequest.collateralToken;
             const principalAmount = principalToken
-              ? formatUnits(BigInt(selectedIntent.principalAmount), principalToken.decimals)
-              : selectedIntent.principalAmount;
+              ? formatUnits(BigInt(selectedRequest.principalAmount), principalToken.decimals)
+              : selectedRequest.principalAmount;
             const totalRepayRaw =
-              BigInt(selectedIntent.principalAmount) +
-              (BigInt(selectedIntent.principalAmount) * BigInt(selectedIntent.interestBps)) / 10000n;
+              BigInt(selectedRequest.principalAmount) +
+              (BigInt(selectedRequest.principalAmount) * BigInt(selectedRequest.interestBps)) / 10000n;
             const totalRepay = principalToken
               ? formatUnits(totalRepayRaw, principalToken.decimals)
               : totalRepayRaw.toString();
-            const dueDate = new Date(Number(selectedIntent.deadlineTimestamp) * 1000);
+            const durationDays = Math.ceil(selectedRequest.durationSeconds / 86400);
 
             return (
               <ModalBody>
@@ -368,7 +339,7 @@ export default function MarketplacePage() {
                 </SummaryRow>
                 <SummaryRow>
                   <SummaryLabel>{t("modal.summary.apr")}</SummaryLabel>
-                  <SummaryValue>{(selectedIntent.interestBps / 100).toFixed(2)}%</SummaryValue>
+                  <SummaryValue>{(selectedRequest.interestBps / 100).toFixed(2)}%</SummaryValue>
                 </SummaryRow>
                 <SummaryRow>
                   <SummaryLabel>{t("modal.summary.total")}</SummaryLabel>
@@ -379,17 +350,14 @@ export default function MarketplacePage() {
                 <SummaryRow>
                   <SummaryLabel>{t("modal.summary.due")}</SummaryLabel>
                   <SummaryValue>
-                    {formatDistanceToNow(dueDate, {
-                      addSuffix: true,
-                      locale: dateLocale,
-                    })}
+                    {durationDays} {durationDays === 1 ? "day" : "days"}
                   </SummaryValue>
                 </SummaryRow>
                 {collateralToken && (
                   <SummaryRow>
                     <SummaryLabel>{t("modal.summary.collateral")}</SummaryLabel>
                     <SummaryValue>
-                      {formatUnits(BigInt(selectedIntent.collateralAmount), collateralToken.decimals)}{" "}
+                      {formatUnits(BigInt(selectedRequest.collateralAmount), collateralToken.decimals)}{" "}
                       {collateralToken.symbol || ""}
                     </SummaryValue>
                   </SummaryRow>

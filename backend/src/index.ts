@@ -5,7 +5,7 @@ import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 import prisma from './config/database';
 
 // Routes
-import intentRoutes from './routes/intentRoutes';
+import loanRequestRoutes from './routes/loanRequestRoutes';
 import loanRoutes from './routes/loanRoutes';
 import tokenRoutes from './routes/tokenRoutes';
 
@@ -21,7 +21,7 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
-app.use('/api/intents', intentRoutes);
+app.use('/api/loan-requests', loanRequestRoutes);
 app.use('/api/loans', loanRoutes);
 app.use('/api/tokens', tokenRoutes);
 

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { successResponse, errorResponse } from '../utils/response';
 import * as loanService from '../services/loanService';
 import {
-  createLoanSchema,
+  indexLoanFundedSchema,
   getLoansQuerySchema,
   updateLoanStatusSchema,
 } from '../validators';
@@ -38,7 +38,7 @@ export const getLoanById = async (req: Request, res: Response) => {
 
 export const createLoan = async (req: Request, res: Response) => {
   try {
-    const parsed = createLoanSchema.safeParse(req.body);
+    const parsed = indexLoanFundedSchema.safeParse(req.body);
     if (!parsed.success) {
       return errorResponse(res, parsed.error.issues.map(i => i.message).join(', '), 400);
     }
