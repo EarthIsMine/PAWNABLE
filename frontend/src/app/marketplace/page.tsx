@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { formatDistanceToNow } from "date-fns";
 import { ko, enUS } from "date-fns/locale";
 import { Calendar, Coins, Loader2, TrendingUp } from "lucide-react";
+import { formatUnits } from "ethers";
 
 import { Navbar } from "@/components/navbar";
 import {
@@ -19,41 +20,16 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { loanAPI, assetAPI } from "@/lib/api";
+import { intentAPI, type Intent } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { getLocale } from "@/lib/locale";
 
-interface Loan {
-  loan_id: string;
-  borrower_id: string;
-  loan_asset_id: string;
-  loan_amount: number;
-  interest_rate_pct: number;
-  total_repay_amount: number;
-  repay_due_at: string;
-  status: string;
-  created_at: string;
-  collaterals?: Array<{
-    asset_id: string;
-    amount: number;
-    token_id?: string | null;
-  }>;
-}
-
-interface Asset {
-  asset_id: string;
-  symbol: string;
-  name: string;
-  blockchain: string;
-}
-
 export default function MarketplacePage() {
-  const [loans, setLoans] = useState<Loan[]>([]);
-  const [assets, setAssets] = useState<Record<string, Asset>>({});
+  const [intents, setIntents] = useState<Intent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const { isConnected, user } = useAuth();
+  const { isConnected } = useAuth();
   const { toast } = useToast();
 
   const t = useTranslations("marketplace");
@@ -71,18 +47,8 @@ export default function MarketplacePage() {
     try {
       setIsLoading(true);
 
-      const [loansData, assetsData] = await Promise.all([
-        loanAPI.getMarketplace(),
-        assetAPI.getAll(),
-      ]);
-
-      setLoans(loansData);
-
-      const assetMap: Record<string, Asset> = {};
-      assetsData.forEach((asset: Asset) => {
-        assetMap[asset.asset_id] = asset;
-      });
-      setAssets(assetMap);
+      const res = await intentAPI.getAll({ status: "ACTIVE", limit: 50 });
+      setIntents(res.intents ?? []);
     } catch (error: any) {
       console.error("Failed to load marketplace:", error);
       toast({
@@ -92,32 +58,6 @@ export default function MarketplacePage() {
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleMatch = async (loanId: string) => {
-    if (!user) {
-      toast({
-        title: t("toast.connectWallet"),
-        description: t("toast.pleaseConnect"),
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      await loanAPI.match(loanId, user.user_id);
-      toast({
-        title: common("success"),
-        description: t("toast.matchSuccess"),
-      });
-      void loadData();
-    } catch (error: any) {
-      toast({
-        title: common("error"),
-        description: error?.message || t("toast.matchError"),
-        variant: "destructive",
-      });
     }
   };
 
@@ -135,7 +75,7 @@ export default function MarketplacePage() {
           <LoadingWrap>
             <SpinIcon aria-hidden="true" />
           </LoadingWrap>
-        ) : loans.length === 0 ? (
+        ) : intents.length === 0 ? (
           <Card>
             <EmptyState>
               <EmptyIcon aria-hidden="true" />
@@ -152,26 +92,36 @@ export default function MarketplacePage() {
         ) : (
           <>
             <Controls>
-              <CountText>{t("count", { count: loans.length })}</CountText>
+              <CountText>{t("count", { count: intents.length })}</CountText>
             </Controls>
 
             <Grid>
-              {loans.map((loan) => {
-                const loanAsset = assets[loan.loan_asset_id];
-                const dueDate = new Date(loan.repay_due_at);
+              {intents.map((intent) => {
+                const principalToken = intent.principalToken;
+                const collateralToken = intent.collateralToken;
+                const principalAmount = principalToken
+                  ? formatUnits(BigInt(intent.principalAmount), principalToken.decimals)
+                  : intent.principalAmount;
+                const totalRepayRaw =
+                  BigInt(intent.principalAmount) +
+                  (BigInt(intent.principalAmount) * BigInt(intent.interestBps)) / 10000n;
+                const totalRepay = principalToken
+                  ? formatUnits(totalRepayRaw, principalToken.decimals)
+                  : totalRepayRaw.toString();
+                const dueDate = new Date(Number(intent.deadlineTimestamp) * 1000);
 
                 return (
-                  <LoanCard key={loan.loan_id}>
+                  <LoanCard key={intent.id}>
                     <CardHeader>
                       <TopRow>
                         <AmountBlock>
                           <Amount>
-                            {loan.loan_amount} {loanAsset?.symbol || ""}
+                            {principalAmount} {principalToken?.symbol || ""}
                           </Amount>
-                          <AssetName>{loanAsset?.name || "Unknown Asset"}</AssetName>
+                          <AssetName>{principalToken?.symbol || t("card.principal")}</AssetName>
                         </AmountBlock>
 
-                        <Badge variant="outline">{String(loan.status).toUpperCase()}</Badge>
+                        <Badge variant="outline">{String(intent.status).toUpperCase()}</Badge>
                       </TopRow>
 
                       <CardDescription>{t("card.borrowerSetsRate")}</CardDescription>
@@ -185,7 +135,7 @@ export default function MarketplacePage() {
                           </MetaIcon>
                           <MetaText>
                             <MetaLabel>{t("card.apr")}</MetaLabel>
-                            <MetaValueAccent>{loan.interest_rate_pct.toFixed(2)}%</MetaValueAccent>
+                            <MetaValueAccent>{(intent.interestBps / 100).toFixed(2)}%</MetaValueAccent>
                           </MetaText>
                         </MetaItem>
 
@@ -196,7 +146,7 @@ export default function MarketplacePage() {
                           <MetaText>
                             <MetaLabel>{t("card.totalRepay")}</MetaLabel>
                             <MetaValue>
-                              {loan.total_repay_amount} {loanAsset?.symbol || ""}
+                              {totalRepay} {principalToken?.symbol || ""}
                             </MetaValue>
                           </MetaText>
                         </MetaItem>
@@ -217,33 +167,25 @@ export default function MarketplacePage() {
                         </MetaItem>
                       </MetaList>
 
-                      {loan.collaterals && loan.collaterals.length > 0 && (
+                      {collateralToken && (
                         <CollateralBox>
                           <CollateralTitle>{t("card.collateral")}</CollateralTitle>
                           <CollateralList>
-                            {loan.collaterals.map((c, idx) => {
-                              const cAsset = assets[c.asset_id];
-                              return (
-                                <CollateralItem key={`${loan.loan_id}-${idx}`}>
-                                  {c.amount} {cAsset?.symbol || ""}
-                                </CollateralItem>
-                              );
-                            })}
+                            <CollateralItem key={intent.id}>
+                              {formatUnits(BigInt(intent.collateralAmount), collateralToken.decimals)}{" "}
+                              {collateralToken.symbol || ""}
+                            </CollateralItem>
                           </CollateralList>
                         </CollateralBox>
                       )}
                     </CardContent>
 
                     <CardFooter>
-                      <Button
-                        size="lg"
-                        tone="accent"
-                        fullWidth
-                        onClick={() => void handleMatch(loan.loan_id)}
-                        disabled={!isConnected}
-                      >
-                        {isConnected ? t("card.lendNow") : t("card.walletRequired")}
-                      </Button>
+                      <Link href={`/loan/${intent.id}`} style={{ width: "100%" }}>
+                        <Button size="lg" tone="accent" fullWidth disabled={!isConnected}>
+                          {isConnected ? t("card.lendNow") : t("card.walletRequired")}
+                        </Button>
+                      </Link>
                     </CardFooter>
                   </LoanCard>
                 );
