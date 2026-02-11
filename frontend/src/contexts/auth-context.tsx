@@ -20,8 +20,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const DISCONNECTED_KEY = "pawnable_disconnected";
-
 function getErrorMessage(error: unknown): string | undefined {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
@@ -42,46 +40,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    void checkAuth();
+    // 초기 자동 연결 없음
+    setIsLoading(false);
   }, []);
-
-  const checkAuth = async () => {
-    setIsLoading(true);
-    try {
-      if (typeof window !== "undefined" && localStorage.getItem(DISCONNECTED_KEY) === "true") {
-        setUser(null);
-        setIsConnected(false);
-        return;
-      }
-
-      const account = await walletService.getAccount();
-      if (account) {
-        setUser({ user_id: account, wallet_address: account });
-        setIsConnected(true);
-      } else {
-        setUser(null);
-        setIsConnected(false);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.ethereum) return;
 
     const handleAccountsChanged = (accounts: string[]) => {
       const next = accounts?.[0];
-      if (next) {
-        if (typeof window !== "undefined") {
-          localStorage.removeItem(DISCONNECTED_KEY);
-        }
-        setUser({ user_id: next, wallet_address: next });
-        setIsConnected(true);
-      } else {
-        if (typeof window !== "undefined") {
-          localStorage.setItem(DISCONNECTED_KEY, "true");
-        }
+      if (!next || next.toLowerCase() !== user?.wallet_address?.toLowerCase()) {
+        walletService.disconnect();
         setUser(null);
         setIsConnected(false);
       }
@@ -92,16 +61,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
     };
-  }, []);
+  }, [user?.wallet_address]);
 
   const connect = async () => {
     setIsLoading(true);
 
     try {
-      if (typeof window !== "undefined") {
-        localStorage.removeItem(DISCONNECTED_KEY);
-      }
-
       // Wallet connect (address 확보)
       const walletAddress = await walletService.connect();
 
@@ -132,10 +97,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const disconnect = () => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(DISCONNECTED_KEY, "true");
-    }
-
     walletService.disconnect();
     setUser(null);
     setIsConnected(false);
