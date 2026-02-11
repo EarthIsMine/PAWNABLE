@@ -1,5 +1,5 @@
-import prisma from '../config/database';
-import { IndexLoanRequestData, LoanRequestStatus } from '../types';
+import prisma from '../config/database.js';
+import { IndexLoanRequestData, LoanRequestStatus } from '../types/index.js';
 
 interface GetLoanRequestsFilter {
   status?: string;

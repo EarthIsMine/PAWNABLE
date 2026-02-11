@@ -1,13 +1,13 @@
 import express from 'express';
-import { env } from './config/env';
-import { corsMiddleware } from './middlewares/cors';
-import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
-import prisma from './config/database';
+import { env } from './config/env.js';
+import { corsMiddleware } from './middlewares/cors.js';
+import { errorHandler, notFoundHandler } from './middlewares/errorHandler.js';
+import prisma from './config/database.js';
 
 // Routes
-import loanRequestRoutes from './routes/loanRequestRoutes';
-import loanRoutes from './routes/loanRoutes';
-import tokenRoutes from './routes/tokenRoutes';
+import loanRequestRoutes from './routes/loanRequestRoutes.js';
+import loanRoutes from './routes/loanRoutes.js';
+import tokenRoutes from './routes/tokenRoutes.js';
 
 const app = express();
 

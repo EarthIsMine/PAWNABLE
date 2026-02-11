@@ -1,5 +1,5 @@
-import prisma from '../config/database';
-import {env} from '../config/env';
+import prisma from '../config/database.js';
+import {env} from '../config/env.js';
 
 interface AddTokenData {
   chainId: number;

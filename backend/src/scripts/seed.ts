@@ -1,5 +1,5 @@
-import prisma from '../config/database';
-import { env } from '../config/env';
+import prisma from '../config/database.js';
+import { env } from '../config/env.js';
 
 const NATIVE_TOKEN_ADDRESS = '0x0000000000000000000000000000000000000000';
 

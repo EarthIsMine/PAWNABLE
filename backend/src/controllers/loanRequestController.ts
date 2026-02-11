@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
-import { successResponse, errorResponse } from '../utils/response';
-import * as loanRequestService from '../services/loanRequestService';
+import { successResponse, errorResponse } from '../utils/response.js';
+import * as loanRequestService from '../services/loanRequestService.js';
 import {
   getLoanRequestsQuerySchema,
   indexLoanRequestSchema,
   indexLoanRequestCancelSchema,
-} from '../validators';
+} from '../validators/index.js';
 
 export const getLoanRequests = async (req: Request, res: Response) => {
   try {

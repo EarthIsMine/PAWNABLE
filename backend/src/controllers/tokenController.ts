@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { successResponse, errorResponse } from '../utils/response';
-import * as tokenService from '../services/tokenService';
-import { addTokenSchema, updateTokenAllowanceSchema } from '../validators';
+import { successResponse, errorResponse } from '../utils/response.js';
+import * as tokenService from '../services/tokenService.js';
+import { addTokenSchema, updateTokenAllowanceSchema } from '../validators/index.js';
 
 export const getTokens = async (req: Request, res: Response) => {
   try {

@@ -1,7 +1,7 @@
-import prisma from '../config/database';
-import { Prisma } from '@prisma/client';
-import { LoanRequestStatus, LoanStatus } from '../types';
-import { IndexLoanFundedData } from '../types';
+import prisma from '../config/database.js';
+import {Prisma} from '@prisma/client';
+import {LoanRequestStatus, LoanStatus} from '../types/index.js';
+import {IndexLoanFundedData} from '../types/index.js';
 
 interface GetLoansFilter {
   status?: string;
@@ -39,11 +39,11 @@ export const getLoans = async (filters: GetLoansFilter) => {
           },
         },
       },
-      orderBy: { indexedAt: 'desc' },
+      orderBy: {indexedAt: 'desc'},
       take: filters.limit,
       skip: filters.offset,
     }),
-    prisma.loan.count({ where }),
+    prisma.loan.count({where}),
   ]);
 
   return {
@@ -56,7 +56,7 @@ export const getLoans = async (filters: GetLoansFilter) => {
 
 export const getLoanById = async (id: string) => {
   return await prisma.loan.findUnique({
-    where: { id },
+    where: {id},
     include: {
       borrower: true,
       lender: true,
@@ -75,13 +75,13 @@ export const createLoan = async (data: IndexLoanFundedData) => {
     // Ensure users exist
     await Promise.all([
       tx.user.upsert({
-        where: { address: data.borrower.toLowerCase() },
-        create: { address: data.borrower.toLowerCase() },
+        where: {address: data.borrower.toLowerCase()},
+        create: {address: data.borrower.toLowerCase()},
         update: {},
       }),
       tx.user.upsert({
-        where: { address: data.lender.toLowerCase() },
-        create: { address: data.lender.toLowerCase() },
+        where: {address: data.lender.toLowerCase()},
+        create: {address: data.lender.toLowerCase()},
         update: {},
       }),
     ]);
@@ -99,8 +99,8 @@ export const createLoan = async (data: IndexLoanFundedData) => {
 
     if (loanRequest && loanRequest.status === LoanRequestStatus.OPEN) {
       await tx.loanRequest.update({
-        where: { id: loanRequest.id },
-        data: { status: LoanRequestStatus.FUNDED },
+        where: {id: loanRequest.id},
+        data: {status: LoanRequestStatus.FUNDED},
       });
     }
 
@@ -129,18 +129,24 @@ export const createLoan = async (data: IndexLoanFundedData) => {
   });
 };
 
-export const updateLoanStatus = async (id: string, status: string, txHash: string) => {
-  const loan = await prisma.loan.findUnique({ where: { id } });
+export const updateLoanStatus = async (
+  id: string,
+  status: string,
+  txHash: string,
+) => {
+  const loan = await prisma.loan.findUnique({where: {id}});
 
   if (!loan) {
     throw new Error('Loan not found');
   }
 
   if (loan.status !== LoanStatus.ONGOING) {
-    throw new Error(`Loan is already ${loan.status}, cannot transition to ${status}`);
+    throw new Error(
+      `Loan is already ${loan.status}, cannot transition to ${status}`,
+    );
   }
 
-  const updateData: any = { status };
+  const updateData: any = {status};
 
   if (status === LoanStatus.REPAID) {
     updateData.repayTxHash = txHash;
@@ -149,7 +155,7 @@ export const updateLoanStatus = async (id: string, status: string, txHash: strin
   }
 
   return await prisma.loan.update({
-    where: { id },
+    where: {id},
     data: updateData,
   });
 };
