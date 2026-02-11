@@ -63,7 +63,15 @@ export default function DashboardPage() {
       const borrowedLoanList = (borrowedLoansRes as LoanListResponse).loans ?? [];
 
       const cancelled = borrowed.filter((r) => r.status === "CANCELLED");
-      const activeBorrowed = borrowed.filter((r) => r.status !== "CANCELLED");
+      const completedBorrowedRequestIds = new Set(
+        borrowedLoanList
+          .filter((loan) => loan.status !== "ONGOING")
+          .map((loan) => loan.request?.id)
+          .filter((id): id is string => Boolean(id)),
+      );
+      const activeBorrowed = borrowed.filter(
+        (r) => r.status !== "CANCELLED" && !completedBorrowedRequestIds.has(r.id),
+      );
 
       setBorrowedRequests(activeBorrowed);
       setCancelledRequests(cancelled);

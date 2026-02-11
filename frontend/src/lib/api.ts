@@ -72,6 +72,7 @@ export interface LoanIndex {
   borrower: { address: string };
   lender: { address: string };
   request?: {
+    id?: string;
     collateralTokenAddress: string;
     collateralAmount: string;
     principalTokenAddress: string;
