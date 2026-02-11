@@ -124,8 +124,8 @@
       "totalRepayment": "총 상환액",
       "due": "만기",
       "collateral": "담보",
-      "lendNow": "지금 대출하기",
-      "connectToLend": "대출하려면 지갑 연결",
+      "lendNow": "지금 빌려주기",
+      "connectToLend": "빌려주려면 지갑 연결",
 
       "borrowerSetsRate": "차입자가 조건을 제시합니다",
       "ctaConnectWallet": "지갑 연결",
@@ -140,7 +140,40 @@
       "pleaseConnect": "대출하려면 지갑을 연결해주세요",
       "matchSuccess": "대출 매칭 성공! 대출을 활성화하세요.",
       "matchError": "대출 매칭 실패",
-      "loadError": "마켓플레이스 데이터 로드 실패"
+      "loadError": "마켓플레이스 데이터 로드 실패",
+      "executeSuccess": "대출 실행 완료",
+      "executeSuccessDesc": "온체인 실행이 완료되었습니다.",
+      "executeError": "실행 실패",
+      "executeErrorDesc": "대출 실행에 실패했습니다."
+    },
+
+    "modal": {
+      "title": "대출자로 진행할까요?",
+      "description": "원금을 제공하고 온체인으로 대출을 실행합니다.",
+      "summary": {
+        "principal": "내가 빌려줄 금액",
+        "apr": "이자율",
+        "total": "내가 받을 상환액",
+        "due": "만기",
+        "collateral": "잠긴 담보"
+      },
+      "steps": {
+        "review": {
+          "title": "조건 확인",
+          "desc": "제공할 원금과 담보 조건을 확인하세요."
+        },
+        "sign": {
+          "title": "자금 제공",
+          "desc": "지갑에서 원금 제공을 승인합니다."
+        },
+        "execute": {
+          "title": "온체인 실행",
+          "desc": "트랜잭션을 보내 대출을 실행합니다."
+        }
+      },
+      "cancel": "취소",
+      "proceed": "지금 실행",
+      "executing": "실행 중..."
     }
   },
 

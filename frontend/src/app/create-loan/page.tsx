@@ -18,6 +18,7 @@ import { Select } from "@/components/ui/select";
 
 import { useAuth } from "@/contexts/auth-context";
 import { tokenAPI, intentAPI, type Token } from "@/lib/api";
+import { contractService } from "@/lib/contract";
 import { useToast } from "@/hooks/use-toast";
 import { walletService } from "@/lib/wallet";
 
@@ -245,7 +246,7 @@ export default function CreateLoanPage() {
       const principalAmountRaw = parseUnits(loanAmount, principalToken.decimals).toString();
       const collateralAmountRaw = parseUnits(collateral.amount, collateralToken.decimals).toString();
       const interestBps = Math.round(Number(interestRate) * 100);
-      const nonce = String(Date.now());
+      const nonce = await contractService.getNonce(user.wallet_address);
 
       const domain = {
         name: "PawnableLoan",

@@ -357,6 +357,12 @@ export const intentAPI = {
   getById(id: string) {
     return fetchAPI<Intent>(`/intents/${id}`);
   },
+  execute(id: string, txHash: string, loanId: string) {
+    return fetchAPI<Intent>(`/intents/${id}/execute`, {
+      method: "POST",
+      body: JSON.stringify({ txHash, loanId }),
+    });
+  },
   cancel(id: string, borrowerAddress: string, signature: string) {
     return fetchAPI<Intent>(`/intents/${id}/cancel`, {
       method: "POST",

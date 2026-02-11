@@ -140,7 +140,40 @@
       "pleaseConnect": "Please connect your wallet to lend",
       "matchSuccess": "Matched successfully. Activate the loan next.",
       "matchError": "Failed to match the loan",
-      "loadError": "Failed to load marketplace data"
+      "loadError": "Failed to load marketplace data",
+      "executeSuccess": "Loan executed",
+      "executeSuccessDesc": "The on-chain execution completed.",
+      "executeError": "Execution failed",
+      "executeErrorDesc": "Could not execute the loan."
+    },
+
+    "modal": {
+      "title": "Proceed as lender?",
+      "description": "You will provide the principal and execute the loan on-chain.",
+      "summary": {
+        "principal": "You will lend",
+        "apr": "APR",
+        "total": "You will receive",
+        "due": "Due",
+        "collateral": "Collateral locked"
+      },
+      "steps": {
+        "review": {
+          "title": "Review",
+          "desc": "Confirm the principal you will fund and the collateral locked."
+        },
+        "sign": {
+          "title": "Provide funds",
+          "desc": "Approve the principal transfer from your wallet."
+        },
+        "execute": {
+          "title": "Execute",
+          "desc": "Submit the on-chain transaction to activate the loan."
+        }
+      },
+      "cancel": "Cancel",
+      "proceed": "Execute now",
+      "executing": "Executing..."
     }
   },
 

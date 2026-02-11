@@ -11,6 +11,7 @@ const LOAN_ABI = [
   "function requestLoanWithToken(string loanId, address loanToken, uint256 loanAmount, uint256 repayAmount, address collateralToken, uint256 collateralAmount, uint256 dueTimestamp) external",
   "function requestLoanWithETH(string loanId, address loanToken, uint256 loanAmount, uint256 repayAmount, uint256 dueTimestamp) external payable",
   "function matchLoan(string loanId) external",
+  "function executeLoan(address borrower, address collateralToken, uint256 collateralAmount, address principalToken, uint256 principalAmount, uint256 interestBps, uint256 durationSeconds, uint256 nonce, uint256 deadline, bytes signature) external payable returns (uint256 loanId)",
   "function repayLoan(string loanId) external",
   "function liquidateLoan(string loanId) external",
   "function cancelLoan(string loanId) external",
@@ -32,6 +33,10 @@ export interface TransactionResult {
   hash: string
   success: boolean
   blockNumber?: number
+}
+
+export interface ExecuteLoanResult extends TransactionResult {
+  loanId: string
 }
 
 export class ContractService {
@@ -156,6 +161,87 @@ export class ContractService {
     } catch (error: any) {
       console.error("Error matching loan:", error)
       throw new Error(error.message || "Failed to match loan")
+    }
+  }
+
+  /**
+   * 인텐트 실행 (대출자)
+   * - principalToken이 ETH면 msg.value 필요
+   */
+  async executeLoan(args: {
+    borrower: string
+    collateralToken: string
+    collateralAmount: string
+    principalToken: string
+    principalAmount: string
+    interestBps: number | string
+    durationSeconds: number | string
+    nonce: string
+    deadline: string
+    signature: string
+    principalIsNative?: boolean
+  }): Promise<ExecuteLoanResult> {
+    if (!this.loanContract) {
+      await this.initialize()
+    }
+
+    try {
+      const baseArgs = [
+        args.borrower,
+        args.collateralToken,
+        args.collateralAmount,
+        args.principalToken,
+        args.principalAmount,
+        args.interestBps,
+        args.durationSeconds,
+        args.nonce,
+        args.deadline,
+        args.signature,
+      ] as const
+
+      const tx = args.principalIsNative
+        ? await this.loanContract!.executeLoan(...baseArgs, { value: args.principalAmount })
+        : await this.loanContract!.executeLoan(...baseArgs)
+
+      const receipt = await tx.wait()
+      const event = receipt.logs.find((log: any) => {
+        try {
+          const parsed = this.loanContract!.interface.parseLog(log)
+          return parsed?.name === "LoanExecuted"
+        } catch {
+          return false
+        }
+      })
+
+      let loanId = ""
+      if (event) {
+        const parsed = this.loanContract!.interface.parseLog(event)
+        loanId = String(parsed?.args?.loanId ?? parsed?.args?.[0] ?? "")
+      }
+
+      return {
+        hash: receipt.hash,
+        success: receipt.status === 1,
+        blockNumber: receipt.blockNumber,
+        loanId,
+      }
+    } catch (error: any) {
+      console.error("Error executing loan:", error)
+      throw new Error(error.message || "Failed to execute loan")
+    }
+  }
+
+  async getNonce(address: string): Promise<string> {
+    if (!this.loanContract) {
+      await this.initialize()
+    }
+
+    try {
+      const nonce = await this.loanContract!.nonces(address)
+      return nonce.toString()
+    } catch (error: any) {
+      console.error("Error fetching nonce:", error)
+      throw new Error(error.message || "Failed to fetch nonce")
     }
   }
 
