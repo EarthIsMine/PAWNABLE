@@ -145,6 +145,8 @@
       "executeSuccessDesc": "온체인 실행이 완료되었습니다.",
       "executeError": "실행 실패",
       "executeErrorDesc": "대출 실행에 실패했습니다.",
+      "insufficientFundsTitle": "가스비(ETH)가 부족합니다",
+      "insufficientFundsDesc": "가스비용 ETH를 조금 충전한 뒤 다시 시도해 주세요.",
       "approving": "승인 중...",
       "approvingDesc": "토큰 사용을 승인합니다.",
       "txRejected": "거래가 취소되었습니다",
@@ -223,6 +225,8 @@
       "creating": "생성 중...",
       "depositingEth": "ETH 예치 중...",
       "depositingEthDesc": "담보 ETH를 컨트랙트에 예치합니다.",
+      "insufficientFundsTitle": "가스비(ETH)가 부족합니다",
+      "insufficientFundsDesc": "가스비용 ETH를 조금 충전한 뒤 다시 시도해 주세요.",
       "txRejected": "거래가 취소되었습니다",
       "txRejectedDesc": "사용자가 거래를 취소했습니다."
     },
@@ -414,7 +418,8 @@
       "activate": "대출 활성화",
       "repay": "대출 상환",
       "liquidate": "담보 청산",
-      "cancel": "대출 취소"
+      "cancel": "대출 취소",
+      "repaying": "상환 중..."
     },
 
     "hint": {
@@ -454,7 +459,9 @@
 
       "activateError": "대출 활성화 실패",
       "repayError": "대출 상환 실패",
-      "liquidateError": "담보 청산 실패"
+      "liquidateError": "담보 청산 실패",
+      "insufficientFundsTitle": "가스비(ETH)가 부족합니다",
+      "insufficientFundsDesc": "가스비용 ETH를 조금 충전한 뒤 다시 시도해 주세요."
     },
 
     "overview": "대출 개요",

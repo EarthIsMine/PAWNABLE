@@ -145,6 +145,8 @@
       "executeSuccessDesc": "The on-chain execution completed.",
       "executeError": "Execution failed",
       "executeErrorDesc": "Could not execute the loan.",
+      "insufficientFundsTitle": "Not enough ETH for gas",
+      "insufficientFundsDesc": "Add a small amount of ETH to cover gas fees and try again.",
       "approving": "Approving...",
       "approvingDesc": "Approving token usage.",
       "txRejected": "Transaction cancelled",
@@ -223,6 +225,8 @@
       "creating": "Creating...",
       "depositingEth": "Depositing ETH...",
       "depositingEthDesc": "Depositing ETH collateral to the contract.",
+      "insufficientFundsTitle": "Not enough ETH for gas",
+      "insufficientFundsDesc": "Add a small amount of ETH to cover gas fees and try again.",
       "txRejected": "Transaction cancelled",
       "txRejectedDesc": "You cancelled the transaction."
     },
@@ -414,7 +418,8 @@
       "activate": "Activate loan",
       "repay": "Repay loan",
       "liquidate": "Liquidate collateral",
-      "cancel": "Cancel loan"
+      "cancel": "Cancel loan",
+      "repaying": "Repaying..."
     },
 
     "hint": {
@@ -454,7 +459,9 @@
 
       "activateError": "Failed to activate the loan",
       "repayError": "Failed to repay the loan",
-      "liquidateError": "Failed to liquidate collateral"
+      "liquidateError": "Failed to liquidate collateral",
+      "insufficientFundsTitle": "Not enough ETH for gas",
+      "insufficientFundsDesc": "Add a small amount of ETH to cover gas fees and try again."
     },
 
     "overview": "Overview",

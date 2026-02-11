@@ -151,10 +151,22 @@ export default function MarketplacePage() {
     } catch (error: any) {
       const message = error?.message || "";
       const code = error?.code ?? error?.info?.error?.code;
+      const isInsufficientFunds =
+        code === "INSUFFICIENT_FUNDS" ||
+        /insufficient funds|funds for gas \* price \+ value/i.test(message);
       const isUserRejected =
         code === 4001 ||
         code === "ACTION_REJECTED" ||
         /user denied|rejected|ACTION_REJECTED/i.test(message);
+
+      if (isInsufficientFunds) {
+        toast({
+          title: t("toast.insufficientFundsTitle"),
+          description: t("toast.insufficientFundsDesc"),
+          variant: "destructive",
+        });
+        return;
+      }
 
       if (isUserRejected) {
         toast({

@@ -50,6 +50,7 @@ export default function LoanDetailPage() {
   const [detail, setDetail] = useState<Detail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isRepaying, setIsRepaying] = useState(false);
 
   const loanId = params?.id;
 
@@ -100,8 +101,12 @@ export default function LoanDetailPage() {
       return {
         kind: "loan" as const,
         status: loan.status,
+        loanStatus: loan.status,
+        loanDbId: loan.id,
+        onchainLoanId: loan.onchainLoanId ?? null,
         displayId: loan.onchainLoanId ?? loan.id,
         principalToken,
+        principalTokenAddress: request?.principalTokenAddress ?? request?.principalToken?.address ?? "",
         collateralToken,
         principalAmount: request?.principalAmount ?? "0",
         collateralAmount: request?.collateralAmount ?? "0",
@@ -121,8 +126,12 @@ export default function LoanDetailPage() {
     return {
       kind: "request" as const,
       status: request.status,
+      loanStatus: request.loan?.status ?? null,
+      loanDbId: request.loan?.id ?? null,
+      onchainLoanId: request.loan?.onchainLoanId ?? null,
       displayId: request.onchainRequestId ?? request.id,
       principalToken,
+      principalTokenAddress: request.principalTokenAddress ?? request.principalToken?.address ?? "",
       collateralToken,
       principalAmount: request.principalAmount,
       collateralAmount: request.collateralAmount,
@@ -137,11 +146,22 @@ export default function LoanDetailPage() {
     };
   }, [detail]);
 
+  const isBorrower =
+    Boolean(user?.wallet_address) &&
+    viewModel?.borrowerAddress?.toLowerCase() === user?.wallet_address?.toLowerCase();
+
   const canCancelRequest =
     viewModel?.kind === "request" &&
     viewModel.status === "OPEN" &&
     Boolean(user?.wallet_address) &&
     viewModel.borrowerAddress?.toLowerCase() === user?.wallet_address?.toLowerCase();
+
+  const canRepayLoan =
+    Boolean(viewModel?.onchainLoanId) &&
+    Boolean(viewModel?.principalTokenAddress) &&
+    isBorrower &&
+    ((viewModel?.kind === "loan" && viewModel.status === "ONGOING") ||
+      (viewModel?.kind === "request" && viewModel.status === "FUNDED"));
 
   const handleCancelRequest = async () => {
     if (!viewModel || viewModel.kind !== "request" || !detail || detail.kind !== "request") return;
@@ -182,6 +202,70 @@ export default function LoanDetailPage() {
       });
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  const handleRepayLoan = async () => {
+    if (!viewModel?.onchainLoanId || !viewModel.principalTokenAddress) return;
+
+    try {
+      setIsRepaying(true);
+
+      const repayAmount = await contractService.getRepayAmount(viewModel.onchainLoanId);
+      const result = await contractService.repayLoan({
+        loanId: viewModel.onchainLoanId,
+        principalToken: viewModel.principalTokenAddress,
+        repayAmount,
+      });
+
+      if (viewModel.loanDbId) {
+        await loanAPI.updateStatus(viewModel.loanDbId, "REPAID", result.hash);
+      }
+
+      toast({
+        title: tc("success"),
+        description: t("toast.repaySuccess", { hash: result.hash }),
+      });
+
+      if (detail) {
+        await loadData(detail.kind === "loan" ? detail.data.id : detail.data.id);
+      }
+    } catch (err: unknown) {
+      const error = err as any;
+      const message = error?.message || "";
+      const code = error?.code ?? error?.info?.error?.code;
+      const isInsufficientFunds =
+        code === "INSUFFICIENT_FUNDS" ||
+        /insufficient funds|funds for gas \* price \+ value/i.test(message);
+      const isUserRejected =
+        code === 4001 ||
+        code === "ACTION_REJECTED" ||
+        /user denied|rejected|ACTION_REJECTED/i.test(message);
+
+      if (isUserRejected) {
+        toast({
+          title: tc("error"),
+          description: t("toast.txRejected", { defaultMessage: "Transaction rejected" }),
+        });
+        return;
+      }
+
+      if (isInsufficientFunds) {
+        toast({
+          title: t("toast.insufficientFundsTitle"),
+          description: t("toast.insufficientFundsDesc"),
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: tc("error"),
+        description: error instanceof Error ? error.message : t("toast.repayError"),
+        variant: "destructive",
+      });
+    } finally {
+      setIsRepaying(false);
     }
   };
 
@@ -371,6 +455,11 @@ export default function LoanDetailPage() {
                   {canCancelRequest && (
                     <Button variant="destructive" onClick={handleCancelRequest} disabled={isCancelling}>
                       {isCancelling ? t("action.cancelling", { defaultMessage: "Cancelling..." }) : t("action.cancel")}
+                    </Button>
+                  )}
+                  {canRepayLoan && (
+                    <Button onClick={handleRepayLoan} disabled={isRepaying}>
+                      {isRepaying ? t("action.repaying", { defaultMessage: "Repaying..." }) : t("action.repay")}
                     </Button>
                   )}
                   <HintBox>
