@@ -27,6 +27,14 @@ type CollateralRow = {
   amount: string;
 };
 
+type FormErrors = {
+  principalTokenAddress?: boolean;
+  loanAmount?: boolean;
+  interestRate?: boolean;
+  durationDays?: boolean;
+  collaterals?: { token_address?: boolean; amount?: boolean }[];
+};
+
 const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID || "84532");
 const CONTRACT_ADDRESS =
   process.env.NEXT_PUBLIC_LOAN_CONTRACT_ADDRESS || process.env.NEXT_PUBLIC_LOAN_CONTRACT || "";
@@ -47,6 +55,7 @@ export default function CreateLoanPage() {
   const [tokens, setTokens] = useState<Token[]>([]);
   const [isLoadingAssets, setIsLoadingAssets] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const [principalTokenAddress, setPrincipalTokenAddress] = useState("");
   const [loanAmount, setLoanAmount] = useState("");
@@ -145,6 +154,7 @@ export default function CreateLoanPage() {
     });
 
   const validate = () => {
+    const nextErrors: FormErrors = {};
     if (!user) {
       toast({
         title: t("toast.connectWallet"),
@@ -160,16 +170,22 @@ export default function CreateLoanPage() {
       !isPositiveNumber(interestRate) ||
       !durationDays
     ) {
+      nextErrors.principalTokenAddress = !principalTokenAddress;
+      nextErrors.loanAmount = !isPositiveNumber(loanAmount);
+      nextErrors.interestRate = !isPositiveNumber(interestRate);
+      nextErrors.durationDays = !durationDays || !Number.isFinite(Number(durationDays)) || Number(durationDays) <= 0;
       toast({
         title: tc("error"),
         description: t("toast.fillRequired"),
         variant: "destructive",
       });
+      setErrors(nextErrors);
       return false;
     }
 
     const d = Number(durationDays);
     if (!Number.isFinite(d) || d <= 0) {
+      nextErrors.durationDays = true;
       toast({
         title: tc("error"),
         description: t("toast.invalidDuration", {
@@ -177,6 +193,7 @@ export default function CreateLoanPage() {
         }),
         variant: "destructive",
       });
+      setErrors(nextErrors);
       return false;
     }
 
@@ -184,14 +201,20 @@ export default function CreateLoanPage() {
       collaterals.length === 0 ||
       collaterals.some((c) => !c.token_address || !isPositiveNumber(c.amount))
     ) {
+      nextErrors.collaterals = collaterals.map((c) => ({
+        token_address: !c.token_address,
+        amount: !isPositiveNumber(c.amount),
+      }));
       toast({
         title: tc("error"),
         description: t("toast.addCollateral"),
         variant: "destructive",
       });
+      setErrors(nextErrors);
       return false;
     }
 
+    setErrors({});
     return true;
   };
 
@@ -355,44 +378,75 @@ export default function CreateLoanPage() {
                   <Select
                     id="loan-asset"
                     value={principalTokenAddress}
-                    onValueChange={setPrincipalTokenAddress}
+                    onValueChange={(value) => {
+                      setPrincipalTokenAddress(value);
+                      if (value) {
+                        setErrors((prev) => ({ ...prev, principalTokenAddress: false }));
+                      }
+                    }}
                     placeholder={t("form.selectAsset")}
                     options={loanAssetOptions}
                   />
                 </Field>
 
-                <Field>
+                <Field data-invalid={Boolean(errors.loanAmount)}>
                   <Label htmlFor="loan-amount">{t("form.amount")}</Label>
                   <Input
                     id="loan-amount"
                     type="number"
                     step="0.0001"
+                    min="0"
                     placeholder={t("form.enterAmount")}
                     value={loanAmount}
-                    onChange={(e) => setLoanAmount(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setLoanAmount(value);
+                      if (isPositiveNumber(value)) {
+                        setErrors((prev) => ({ ...prev, loanAmount: false }));
+                      }
+                    }}
+                    data-invalid={Boolean(errors.loanAmount)}
+                    data-no-spin="true"
                   />
                 </Field>
 
-                <Field>
+                <Field data-invalid={Boolean(errors.interestRate)}>
                   <Label htmlFor="interest-rate">{t("form.interestRate")}</Label>
                   <Input
                     id="interest-rate"
                     type="number"
                     step="0.01"
+                    min="0"
                     placeholder="5.00"
                     value={interestRate}
-                    onChange={(e) => setInterestRate(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setInterestRate(value);
+                      if (isPositiveNumber(value)) {
+                        setErrors((prev) => ({ ...prev, interestRate: false }));
+                      }
+                    }}
+                    data-invalid={Boolean(errors.interestRate)}
                   />
                 </Field>
 
-                <Field>
+                <Field data-invalid={Boolean(errors.durationDays)}>
                   <Label htmlFor="duration">{t("form.duration")}</Label>
                   <Input
                     id="duration"
                     type="number"
+                    min="0"
                     placeholder="30"
                     value={durationDays}
-                    onChange={(e) => setDurationDays(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setDurationDays(value);
+                      if (Number.isFinite(Number(value)) && Number(value) > 0) {
+                        setErrors((prev) => ({ ...prev, durationDays: false }));
+                      }
+                    }}
+                    data-invalid={Boolean(errors.durationDays)}
+                    data-no-spin="true"
                   />
                 </Field>
               </Grid2>
@@ -421,20 +475,31 @@ export default function CreateLoanPage() {
               <Stack>
                 {collaterals.map((c, index) => (
                   <CollateralRowWrap key={index}>
-                    <Field>
+                    <Field data-invalid={Boolean(errors.collaterals?.[index]?.token_address)}>
                       <Label htmlFor={`collateral-asset-${index}`}>
                         {t("form.collateralAsset")}
                       </Label>
                       <Select
                         id={`collateral-asset-${index}`}
                         value={c.token_address}
-                        onValueChange={(v) => updateCollateral(index, { token_address: v })}
+                        onValueChange={(v) => {
+                          updateCollateral(index, { token_address: v });
+                          if (v) {
+                            setErrors((prev) => {
+                              const next = { ...prev };
+                              const list = [...(next.collaterals ?? [])];
+                              list[index] = { ...(list[index] ?? {}), token_address: false };
+                              next.collaterals = list;
+                              return next;
+                            });
+                          }
+                        }}
                         placeholder={t("form.selectAsset")}
                         options={collateralOptions}
                       />
                     </Field>
 
-                    <Field>
+                    <Field data-invalid={Boolean(errors.collaterals?.[index]?.amount)}>
                       <Label htmlFor={`collateral-amount-${index}`}>
                         {t("form.collateralAmount")}
                       </Label>
@@ -442,9 +507,24 @@ export default function CreateLoanPage() {
                         id={`collateral-amount-${index}`}
                         type="number"
                         step="0.0001"
+                        min="0"
                         placeholder="1.0"
                         value={c.amount}
-                        onChange={(e) => updateCollateral(index, { amount: e.target.value })}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          updateCollateral(index, { amount: value });
+                          if (isPositiveNumber(value)) {
+                            setErrors((prev) => {
+                              const next = { ...prev };
+                              const list = [...(next.collaterals ?? [])];
+                              list[index] = { ...(list[index] ?? {}), amount: false };
+                              next.collaterals = list;
+                              return next;
+                            });
+                          }
+                        }}
+                        data-invalid={Boolean(errors.collaterals?.[index]?.amount)}
+                        data-no-spin="true"
                       />
                     </Field>
 
@@ -491,6 +571,20 @@ const Page = styled.div`
   min-height: 100dvh;
   background: var(--background);
   color: var(--foreground);
+
+  input::placeholder {
+    color: color-mix(in oklab, var(--muted-foreground) 55%, transparent);
+  }
+
+  input[data-no-spin="true"][type="number"] {
+    appearance: textfield;
+  }
+
+  input[data-no-spin="true"][type="number"]::-webkit-outer-spin-button,
+  input[data-no-spin="true"][type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
 `;
 
 const Container = styled.div`
@@ -530,9 +624,19 @@ const Grid2 = styled.div`
   }
 `;
 
-const Field = styled.div`
+const Field = styled.div<{ "data-invalid"?: boolean }>`
   display: grid;
   gap: 8px;
+
+  &[data-invalid="true"] label {
+    color: var(--destructive);
+  }
+
+  &[data-invalid="true"] input,
+  &[data-invalid="true"] select {
+    border-color: var(--destructive);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--destructive) 22%, transparent);
+  }
 `;
 
 const SummaryBox = styled.div`
