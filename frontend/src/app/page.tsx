@@ -415,7 +415,9 @@ export default function HomePage() {
             <FooterText>{t("footer.testnet")}</FooterText>
             <FooterLinks>
               <FooterLink href="#">{t("footer.docs")}</FooterLink>
-              <FooterLink href="#">{t("footer.github")}</FooterLink>
+              <FooterLink href="https://github.com/EarthIsMine/PAWNABLE">
+                {t("footer.github")}
+              </FooterLink>
               <FooterLink href="#">{t("footer.discord")}</FooterLink>
             </FooterLinks>
           </FooterWrap>

@@ -51,7 +51,10 @@ export class WalletService {
       return this.mockAddress
     }
 
-    if (!this.provider) return null
+    if (!this.provider) {
+      if (typeof window === "undefined" || !window.ethereum) return null
+      this.provider = new BrowserProvider(window.ethereum)
+    }
 
     try {
       const accounts = await this.provider.listAccounts()

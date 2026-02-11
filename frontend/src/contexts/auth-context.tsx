@@ -45,8 +45,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const checkAuth = async () => {
-    setIsLoading(false);
+    setIsLoading(true);
+    try {
+      const account = await walletService.getAccount();
+      if (account) {
+        setUser({ user_id: account, wallet_address: account });
+        setIsConnected(true);
+      } else {
+        setUser(null);
+        setIsConnected(false);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.ethereum) return;
+
+    const handleAccountsChanged = (accounts: string[]) => {
+      const next = accounts?.[0];
+      if (next) {
+        setUser({ user_id: next, wallet_address: next });
+        setIsConnected(true);
+      } else {
+        setUser(null);
+        setIsConnected(false);
+      }
+    };
+
+    window.ethereum.on("accountsChanged", handleAccountsChanged);
+
+    return () => {
+      window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
+    };
+  }, []);
 
   const connect = async () => {
     setIsLoading(true);
