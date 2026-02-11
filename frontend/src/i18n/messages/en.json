@@ -66,15 +66,15 @@
         },
         "collateral": {
           "title": "Crypto collateral",
-          "description": "Use ETH, SOL, or NFTs as collateral. Assets are held safely on-chain."
+          "description": "Currently supports ETH and ERC-20 tokens as collateral. Assets are secured in smart contracts."
         },
         "deadlines": {
           "title": "Fixed deadlines",
           "description": "Clear repayment deadlines. Time-based terms only—no price-trigger liquidations."
         },
         "matching": {
-          "title": "Fast matching",
-          "description": "Connect directly with lenders in the marketplace. Fast and transparent P2P flow."
+          "title": "Direct funding",
+          "description": "Find a loan request in the marketplace and fund it directly."
         }
       }
     },
@@ -253,7 +253,7 @@
   "dashboard": {
     "title": "My loans",
 
-    "welcome": "Welcome back, {name}",
+    "welcome": "Hello, {name}",
     "unknownAsset": "Unknown asset",
 
     "cta": {
