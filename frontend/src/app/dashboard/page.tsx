@@ -33,6 +33,7 @@ export default function DashboardPage() {
   const c = useTranslations("common");
 
   const [borrowedRequests, setBorrowedRequests] = useState<LoanRequest[]>([]);
+  const [borrowedLoans, setBorrowedLoans] = useState<LoanIndex[]>([]);
   const [lentLoans, setLentLoans] = useState<LoanIndex[]>([]);
   const [cancelledRequests, setCancelledRequests] = useState<LoanRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,13 +52,15 @@ export default function DashboardPage() {
     try {
       setIsLoading(true);
 
-      const [borrowedRes, lentRes] = await Promise.all([
+      const [borrowedRes, lentRes, borrowedLoansRes] = await Promise.all([
         loanRequestAPI.getAll({ borrower: walletAddress, limit: 50 }),
         loanAPI.getAll({ lender: walletAddress, limit: 50 }),
+        loanAPI.getAll({ borrower: walletAddress, limit: 50 }),
       ]);
 
       const borrowed = (borrowedRes as LoanRequestListResponse).loanRequests ?? [];
       const lent = (lentRes as LoanListResponse).loans ?? [];
+      const borrowedLoanList = (borrowedLoansRes as LoanListResponse).loans ?? [];
 
       const cancelled = borrowed.filter((r) => r.status === "CANCELLED");
       const activeBorrowed = borrowed.filter((r) => r.status !== "CANCELLED");
@@ -65,6 +68,7 @@ export default function DashboardPage() {
       setBorrowedRequests(activeBorrowed);
       setCancelledRequests(cancelled);
       setLentLoans(lent);
+      setBorrowedLoans(borrowedLoanList);
     } catch (err: unknown) {
       console.error("Failed to load dashboard:", err);
       toast({
@@ -89,6 +93,10 @@ export default function DashboardPage() {
 
   const statsBorrow = useMemo(() => calcRequestStats(borrowedRequests), [borrowedRequests]);
   const statsLend = useMemo(() => calcLoanStats(lentLoans), [lentLoans]);
+  const completedBorrowedLoans = useMemo(
+    () => borrowedLoans.filter((loan) => loan.status !== "ONGOING"),
+    [borrowedLoans],
+  );
 
   if (authLoading || isLoading) {
     return (
@@ -181,6 +189,9 @@ export default function DashboardPage() {
                 <TabsTrigger value="borrowed">
                   {t("tabs.borrowed")} ({borrowedRequests.length})
                 </TabsTrigger>
+                <TabsTrigger value="completed">
+                  {t("tabs.completed")} ({completedBorrowedLoans.length})
+                </TabsTrigger>
                 <TabsTrigger value="lent">
                   {t("tabs.lent")} ({lentLoans.length})
                 </TabsTrigger>
@@ -202,6 +213,24 @@ export default function DashboardPage() {
                   <ListGrid>
                     {borrowedRequests.map((request) => (
                       <RequestCard key={request.id} request={request} />
+                    ))}
+                  </ListGrid>
+                )}
+              </TabsContent>
+
+              <TabsContent value="completed">
+                {completedBorrowedLoans.length === 0 ? (
+                  <EmptyCard>
+                    <EmptyTitle>{t("empty.completed.title")}</EmptyTitle>
+                    <EmptyDesc>{t("empty.completed.description")}</EmptyDesc>
+                    <Link href="/marketplace">
+                      <Button>{t("empty.completed.button")}</Button>
+                    </Link>
+                  </EmptyCard>
+                ) : (
+                  <ListGrid>
+                    {completedBorrowedLoans.map((loan) => (
+                      <LoanCard key={loan.id} loan={loan} />
                     ))}
                   </ListGrid>
                 )}
