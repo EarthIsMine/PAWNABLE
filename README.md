@@ -5,6 +5,7 @@
 > Collateral is locked on-chain, and liquidation is determined purely by time.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+![Deploy (EC2)](https://github.com/EarthIsMine/PAWNABLE/actions/workflows/deploy-ec2.yml/badge.svg)
 
 ---
 
