@@ -327,6 +327,9 @@
     },
 
     "statusLabel": {
+      "ONGOING": "진행 중",
+      "REPAID": "상환됨",
+      "CLAIMED": "청산됨",
       "pending": "생성됨",
       "matched": "매칭됨",
       "active": "활성",
@@ -339,7 +342,8 @@
     "timeline": {
       "created": "생성됨",
       "matched": "매칭됨",
-      "closed": "종료됨"
+      "closed": "종료됨",
+      "due": "만기"
     },
 
     "action": {
@@ -350,7 +354,8 @@
     },
 
     "hint": {
-      "connectWallet": "작업을 수행하려면 지갑을 연결해주세요."
+      "connectWallet": "작업을 수행하려면 지갑을 연결해주세요.",
+      "onchainOnly": "작업은 온체인에서 실행됩니다. 지갑으로 진행해 주세요."
     },
 
     "confirm": {

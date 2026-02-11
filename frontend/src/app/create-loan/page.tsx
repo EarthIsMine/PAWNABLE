@@ -117,6 +117,26 @@ export default function CreateLoanPage() {
     [allowedTokens],
   );
 
+  useEffect(() => {
+    if (!principalTokenAddress || allowedTokens.length === 0) return;
+
+    const principal = allowedTokens.find((t) => t.address === principalTokenAddress);
+    if (!principal) return;
+
+    const usdc = allowedTokens.find((t) => t.symbol.toUpperCase() === "USDC");
+    const eth = allowedTokens.find((t) => t.symbol.toUpperCase() === "ETH");
+
+    if (!usdc || !eth) return;
+
+    const desired = principal.symbol.toUpperCase() === "USDC" ? eth.address : usdc.address;
+
+    setCollaterals((prev) => {
+      if (prev.length === 0) return prev;
+      if (prev[0].token_address === desired) return prev;
+      return [{ ...prev[0], token_address: desired }, ...prev.slice(1)];
+    });
+  }, [principalTokenAddress, allowedTokens]);
+
   const totalRepayment = useMemo(() => {
     const principal = Number(loanAmount) || 0;
     const rate = Number(interestRate) || 0;

@@ -327,6 +327,9 @@
     },
 
     "statusLabel": {
+      "ONGOING": "Ongoing",
+      "REPAID": "Repaid",
+      "CLAIMED": "Claimed",
       "pending": "Created",
       "matched": "Matched",
       "active": "Active",
@@ -339,7 +342,8 @@
     "timeline": {
       "created": "Created",
       "matched": "Matched",
-      "closed": "Closed"
+      "closed": "Closed",
+      "due": "Due"
     },
 
     "action": {
@@ -350,7 +354,8 @@
     },
 
     "hint": {
-      "connectWallet": "Connect your wallet to perform actions."
+      "connectWallet": "Connect your wallet to perform actions.",
+      "onchainOnly": "Actions are executed on-chain. Use your wallet to transact."
     },
 
     "confirm": {

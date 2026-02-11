@@ -4,85 +4,75 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import styled from "@emotion/styled";
+import { formatUnits } from "ethers";
 
 import { Navbar } from "@/components/navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
-import { loanAPI, assetAPI, type Asset, type Loan } from "@/lib/api";
-import { contractService } from "@/lib/contract";
+import { loanAPI } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 
 import { Loader2, ArrowLeft, Calendar, TrendingUp, Coins, Shield, AlertCircle } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 
-type ActionType = "activate" | "repay" | "liquidate" | "cancel";
+type LoanStatus = "ONGOING" | "REPAID" | "CLAIMED";
 
-type AssetMap = Record<string, Asset>;
+type TokenInfo = {
+  symbol: string;
+  decimals: number;
+  address: string;
+  isNative: boolean;
+};
 
-type LoanApiShape = Loan | { loan: Loan; collaterals?: unknown[] };
+type IntentInfo = {
+  principalAmount: string;
+  collateralAmount: string;
+  interestBps: number;
+  durationSeconds: number;
+  principalToken: TokenInfo;
+  collateralToken: TokenInfo;
+};
 
-function getLoanFromResponse(res: LoanApiShape): Loan {
-  // 백엔드가 { loan, collaterals } 형태로 줄 수도 있고, Loan 자체일 수도 있음
-  if (typeof res === "object" && res !== null && "loan" in res) {
-    const loan = (res as { loan: Loan }).loan;
-    return loan;
+type LoanDetail = {
+  id: string;
+  loanId: string;
+  status: LoanStatus;
+  borrower: { address: string };
+  lender: { address: string };
+  intent?: IntentInfo | null;
+  startTimestamp: string;
+  dueTimestamp: string;
+};
+
+function toBigInt(value: string | number | bigint | null | undefined) {
+  if (typeof value === "bigint") return value;
+  if (typeof value === "number") return BigInt(value);
+  if (typeof value === "string" && value.length > 0) return BigInt(value);
+  return 0n;
+}
+
+function formatAmount(raw: string, decimals: number) {
+  try {
+    return formatUnits(toBigInt(raw), decimals);
+  } catch {
+    return "0";
   }
-  return res as Loan;
-}
-
-function buildAssetMap(list: Asset[]): AssetMap {
-  const map: AssetMap = {};
-  for (const a of list) map[a.asset_id] = a;
-  return map;
-}
-
-function isLoanStatus(s: unknown): s is Loan["status"] {
-  return (
-    s === "pending" ||
-    s === "matched" ||
-    s === "active" ||
-    s === "repaid" ||
-    s === "liquidated" ||
-    s === "cancelled"
-  );
-}
-
-function normalizeStatus(status: unknown): Loan["status"] {
-  if (isLoanStatus(status)) return status;
-  // 예상 밖 값은 pending으로 fallback (UI 깨짐 방지)
-  return "pending";
 }
 
 export default function LoanDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { user, isConnected } = useAuth();
+  const { isConnected } = useAuth();
   const { toast } = useToast();
 
   const t = useTranslations("loanDetail");
   const tc = useTranslations("common");
 
-  const [loan, setLoan] = useState<Loan | null>(null);
-  const [assets, setAssets] = useState<AssetMap>({});
+  const [loan, setLoan] = useState<LoanDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [actionType, setActionType] = useState<ActionType | null>(null);
 
   const loanId = params?.id;
 
@@ -96,15 +86,8 @@ export default function LoanDetailPage() {
     try {
       setIsLoading(true);
 
-      const [loanRes, assetsRes] = await Promise.all([loanAPI.getById(id), assetAPI.getAll()]);
-
-      const parsedLoan = getLoanFromResponse(loanRes as LoanApiShape);
-      setLoan({
-        ...parsedLoan,
-        status: normalizeStatus(parsedLoan.status),
-      });
-
-      setAssets(buildAssetMap(assetsRes));
+      const loanRes = (await loanAPI.getById(id)) as LoanDetail;
+      setLoan(loanRes);
     } catch (err) {
       toast({
         title: tc("error"),
@@ -120,143 +103,25 @@ export default function LoanDetailPage() {
   const viewModel = useMemo(() => {
     if (!loan) return null;
 
-    const loanAsset = assets[loan.loan_asset_id];
-    const dueDate = new Date(loan.repay_due_at);
+    const intent = loan.intent ?? null;
+    const principalToken = intent?.principalToken ?? null;
+    const collateralToken = intent?.collateralToken ?? null;
+    const dueDate = new Date(Number(loan.dueTimestamp) * 1000);
     const isOverdue = dueDate.getTime() < Date.now();
-    const isBorrower = user?.user_id === loan.borrower_id;
-    const isLender = user?.user_id === loan.lender_id;
+    return {
+      principalToken,
+      collateralToken,
+      intent,
+      dueDate,
+      isOverdue,
+    };
+  }, [loan]);
 
-    return { loanAsset, dueDate, isOverdue, isBorrower, isLender };
-  }, [loan, assets, user]);
-
-  function statusLabel(status: Loan["status"]) {
+  function statusLabel(status: LoanStatus) {
     // ko.json에 이미 dashboard.status가 있으므로 재사용 (키 경로는 프로젝트 기준에 맞게 유지)
     // loanDetail쪽으로 옮기고 싶으면 키 재정리 가능
     // 여기서는 loanDetail.statusLabel.* 로 쓰는 편이 컴포넌트 응집도는 더 좋음
     return t(`statusLabel.${status}`);
-  }
-
-  function openConfirm(type: ActionType) {
-    setActionType(type);
-    setConfirmOpen(true);
-  }
-
-  function confirmTitle() {
-    return t("confirm.title");
-  }
-
-  function confirmDescription(type: ActionType) {
-    return t(`confirm.description.${type}`);
-  }
-
-  function confirmCta(type: ActionType) {
-    return t(`confirm.cta.${type}`);
-  }
-
-  async function handleAction() {
-    if (!loan || !actionType) return;
-
-    setIsProcessing(true);
-    setConfirmOpen(false);
-
-    try {
-      switch (actionType) {
-        case "cancel": {
-          await loanAPI.cancel(loan.loan_id);
-          toast({ title: tc("success"), description: t("toast.cancelSuccess") });
-          router.push("/dashboard");
-          return;
-        }
-
-        case "activate": {
-          // 컨트랙트 연동이 아직 완성 전일 수 있으니, 실패 메시지를 i18n으로 일관되게 처리
-          toast({
-            title: t("toast.txPendingTitle"),
-            description: t("toast.txPendingDesc"),
-          });
-
-          await contractService.initialize();
-
-          // “matchLoan”이 실제로 activate인지, match인지 백엔드/컨트랙트 설계에 따라 달라질 수 있음
-          // 여기서는 기존 코드 흐름을 유지하되, tx hash가 있다면 표시
-          const result = await contractService.matchLoan(loan.loan_id, String(loan.loan_amount));
-
-          // 백엔드 notify는 선택 사항이므로 실패해도 UX는 성공으로 처리
-          // (단, 추후에는 reconcile job을 두는 게 좋음)
-          try {
-            // NOTE: 기존 코드에서 activate(loanId, txHash) 형태였는데,
-            // api.ts 기준 activate(loanId)만 있음.
-            // txHash를 백엔드로 보내려면 엔드포인트/스키마를 맞춰야 함.
-            await loanAPI.activate(loan.loan_id);
-          } catch {
-            // ignore
-          }
-
-          toast({
-            title: tc("success"),
-            description: t("toast.activateSuccess", {
-              hash: result?.hash ? `${result.hash.slice(0, 10)}…` : "-",
-            }),
-          });
-
-          await loadData(loan.loan_id);
-          return;
-        }
-
-        case "repay": {
-          toast({
-            title: t("toast.txPendingTitle"),
-            description: t("toast.txPendingDesc"),
-          });
-
-          await contractService.initialize();
-          const result = await contractService.repayLoan(
-            loan.loan_id,
-            String(loan.total_repay_amount),
-          );
-
-          toast({
-            title: tc("success"),
-            description: t("toast.repaySuccess", {
-              hash: result?.hash ? `${result.hash.slice(0, 10)}…` : "-",
-            }),
-          });
-
-          await loadData(loan.loan_id);
-          return;
-        }
-
-        case "liquidate": {
-          toast({
-            title: t("toast.txPendingTitle"),
-            description: t("toast.txPendingDesc"),
-          });
-
-          await contractService.initialize();
-          const result = await contractService.liquidateLoan(loan.loan_id);
-
-          toast({
-            title: tc("success"),
-            description: t("toast.liquidateSuccess", {
-              hash: result?.hash ? `${result.hash.slice(0, 10)}…` : "-",
-            }),
-          });
-
-          await loadData(loan.loan_id);
-          return;
-        }
-      }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t("toast.genericError");
-      toast({
-        title: tc("error"),
-        description: message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-      setActionType(null);
-    }
   }
 
   if (isLoading) {
@@ -289,14 +154,17 @@ export default function LoanDetailPage() {
     );
   }
 
-  const { loanAsset, dueDate, isOverdue, isBorrower, isLender } = viewModel;
+  const { principalToken, collateralToken, intent, dueDate, isOverdue } = viewModel;
 
-  // 액션 가드
-  const canCancel = loan.status === "pending" && isBorrower;
-  const canActivateAsLender =
-    (loan.status === "pending" || loan.status === "matched") && !isBorrower && isConnected;
-  const canRepay = loan.status === "active" && isBorrower;
-  const canLiquidate = loan.status === "active" && isLender && isOverdue;
+  const principalAmount = intent ? formatAmount(intent.principalAmount, intent.principalToken.decimals) : "0";
+  const interestBps = intent?.interestBps ?? 0;
+  const interestRatePct = (interestBps / 100).toFixed(2);
+  const totalRepayment = intent
+    ? formatAmount(
+        (toBigInt(intent.principalAmount) + (toBigInt(intent.principalAmount) * BigInt(interestBps)) / 10000n).toString(),
+        intent.principalToken.decimals,
+      )
+    : "0";
 
   return (
     <Shell>
@@ -315,7 +183,7 @@ export default function LoanDetailPage() {
             <div>
               <Title>{t("title")}</Title>
               <SubText>
-                {t("idLabel")}: <Mono>{loan.loan_id}</Mono>
+                {t("idLabel")}: <Mono>{loan.loanId ?? loan.id}</Mono>
               </SubText>
             </div>
 
@@ -338,7 +206,7 @@ export default function LoanDetailPage() {
                       <span>{t("field.loanAmount")}</span>
                     </RowLabel>
                     <RowValue>
-                      {loan.loan_amount} {loanAsset?.symbol ?? ""}
+                      {principalAmount} {principalToken?.symbol ?? ""}
                     </RowValue>
                   </Row>
 
@@ -351,7 +219,7 @@ export default function LoanDetailPage() {
                     </RowLabel>
                     <RowValue>
                       <Primary>
-                        {loan.interest_rate_pct != null ? loan.interest_rate_pct.toFixed(2) : "-"}%
+                        {interestRatePct}%
                       </Primary>
                     </RowValue>
                   </Row>
@@ -364,7 +232,7 @@ export default function LoanDetailPage() {
                       <span>{t("field.totalRepayment")}</span>
                     </RowLabel>
                     <RowValue>
-                      {loan.total_repay_amount} {loanAsset?.symbol ?? ""}
+                      {totalRepayment} {principalToken?.symbol ?? ""}
                     </RowValue>
                   </Row>
 
@@ -397,24 +265,22 @@ export default function LoanDetailPage() {
               </CardHeader>
 
               <CardContent>
-                {loan.collaterals && loan.collaterals.length > 0 ? (
+                {collateralToken && intent ? (
                   <CollateralList>
-                    {loan.collaterals.map((c, idx) => {
-                      const ca = assets[c.asset_id];
-                      return (
-                        <CollateralItem key={`${c.asset_id}-${idx}`}>
-                          <div>
-                            <div>{ca?.name ?? t("unknownAsset")}</div>
-                            <SmallMuted>{ca?.blockchain ?? "-"}</SmallMuted>
-                          </div>
-                          <div>
-                            <div>
-                              <strong>{c.amount}</strong> {ca?.symbol ?? ""}
-                            </div>
-                          </div>
-                        </CollateralItem>
-                      );
-                    })}
+                    <CollateralItem key={collateralToken.address ?? "collateral-token"}>
+                      <div>
+                        <div>{collateralToken.symbol ?? t("unknownAsset")}</div>
+                        <SmallMuted>{collateralToken.address ?? "-"}</SmallMuted>
+                      </div>
+                      <div>
+                        <div>
+                          <strong>
+                            {formatAmount(intent.collateralAmount, collateralToken.decimals)}
+                          </strong>{" "}
+                          {collateralToken.symbol ?? ""}
+                        </div>
+                      </div>
+                    </CollateralItem>
                   </CollateralList>
                 ) : (
                   <Muted>{t("emptyCollateral")}</Muted>
@@ -431,38 +297,10 @@ export default function LoanDetailPage() {
 
               <CardContent>
                 <ActionStack>
-                  {canCancel && (
-                    <Button
-                      variant="destructive"
-                      onClick={() => openConfirm("cancel")}
-                      disabled={isProcessing}
-                    >
-                      {t("action.cancel")}
-                    </Button>
-                  )}
-
-                  {canActivateAsLender && (
-                    <Button onClick={() => openConfirm("activate")} disabled={isProcessing}>
-                      {t("action.activate")}
-                    </Button>
-                  )}
-
-                  {canRepay && (
-                    <Button onClick={() => openConfirm("repay")} disabled={isProcessing}>
-                      {t("action.repay")}
-                    </Button>
-                  )}
-
-                  {canLiquidate && (
-                    <Button
-                      variant="destructive"
-                      onClick={() => openConfirm("liquidate")}
-                      disabled={isProcessing}
-                    >
-                      {t("action.liquidate")}
-                    </Button>
-                  )}
-
+                  <HintBox>
+                    <AlertCircle className="h-5 w-5" />
+                    <span>{t("hint.onchainOnly")}</span>
+                  </HintBox>
                   {!isConnected && (
                     <HintBox>
                       <AlertCircle className="h-5 w-5" />
@@ -481,22 +319,15 @@ export default function LoanDetailPage() {
                 <Timeline>
                   <TimelineItem>
                     <div>{t("timeline.created")}</div>
-                    <SmallMuted>{format(new Date(loan.created_at), "PPp")}</SmallMuted>
+                    <SmallMuted>
+                      {format(new Date(Number(loan.startTimestamp) * 1000), "PPp")}
+                    </SmallMuted>
                   </TimelineItem>
 
-                  {loan.matched_at && (
-                    <TimelineItem>
-                      <div>{t("timeline.matched")}</div>
-                      <SmallMuted>{format(new Date(loan.matched_at), "PPp")}</SmallMuted>
-                    </TimelineItem>
-                  )}
-
-                  {loan.closed_at && (
-                    <TimelineItem>
-                      <div>{t("timeline.closed")}</div>
-                      <SmallMuted>{format(new Date(loan.closed_at), "PPp")}</SmallMuted>
-                    </TimelineItem>
-                  )}
+                  <TimelineItem>
+                    <div>{t("timeline.due")}</div>
+                    <SmallMuted>{format(new Date(Number(loan.dueTimestamp) * 1000), "PPp")}</SmallMuted>
+                  </TimelineItem>
                 </Timeline>
               </CardContent>
             </Card>
