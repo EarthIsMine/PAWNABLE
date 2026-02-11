@@ -255,8 +255,15 @@ export class ContractService {
         success: receipt.status === 1,
         blockNumber: receipt.blockNumber,
       }
-    } catch (error: unknown) {
-      console.error("Error approving token:", error)
+    } catch (error: any) {
+      const message = error?.message || ""
+      const code = error?.code ?? error?.info?.error?.code
+      const isUserRejected =
+        code === 4001 || code === "ACTION_REJECTED" || /user denied|rejected|ACTION_REJECTED/i.test(message)
+
+      if (!isUserRejected) {
+        console.error("Error approving token:", error)
+      }
       throw new Error(error instanceof Error ? error.message : "Failed to approve token")
     }
   }
@@ -280,8 +287,15 @@ export class ContractService {
         success: receipt.status === 1,
         blockNumber: receipt.blockNumber,
       }
-    } catch (error: unknown) {
-      console.error("Error depositing ETH:", error)
+    } catch (error: any) {
+      const message = error?.message || ""
+      const code = error?.code ?? error?.info?.error?.code
+      const isUserRejected =
+        code === 4001 || code === "ACTION_REJECTED" || /user denied|rejected|ACTION_REJECTED/i.test(message)
+
+      if (!isUserRejected) {
+        console.error("Error depositing ETH:", error)
+      }
       throw new Error(error instanceof Error ? error.message : "Failed to deposit ETH")
     }
   }

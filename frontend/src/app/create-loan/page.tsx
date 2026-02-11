@@ -302,12 +302,24 @@ export default function CreateLoanPage() {
       });
 
       router.push("/dashboard");
-    } catch (err: unknown) {
-      toast({
-        title: tc("error"),
-        description: err instanceof Error ? err.message : t("toast.createError"),
-        variant: "destructive",
-      });
+    } catch (err: any) {
+      const message = err?.message || "";
+      const code = err?.code ?? err?.info?.error?.code;
+      const isUserRejected =
+        code === 4001 || code === "ACTION_REJECTED" || /user denied|rejected|ACTION_REJECTED/i.test(message);
+
+      if (isUserRejected) {
+        toast({
+          title: t("toast.txRejected"),
+          description: t("toast.txRejectedDesc"),
+        });
+      } else {
+        toast({
+          title: tc("error"),
+          description: message || t("toast.createError"),
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }

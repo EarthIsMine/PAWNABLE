@@ -152,9 +152,24 @@ export default function MarketplacePage() {
       setIsModalOpen(false);
       router.push(result.loanId ? `/loan/${result.loanId}` : `/loan/${intent.id}`);
     } catch (error: any) {
+      const message = error?.message || "";
+      const code = error?.code ?? error?.info?.error?.code;
+      const isUserRejected =
+        code === 4001 ||
+        code === "ACTION_REJECTED" ||
+        /user denied|rejected|ACTION_REJECTED/i.test(message);
+
+      if (isUserRejected) {
+        toast({
+          title: t("toast.txRejected"),
+          description: t("toast.txRejectedDesc"),
+        });
+        return;
+      }
+
       toast({
         title: t("toast.executeError"),
-        description: error?.message || t("toast.executeErrorDesc"),
+        description: message || t("toast.executeErrorDesc"),
         variant: "destructive",
       });
     } finally {

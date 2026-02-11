@@ -144,7 +144,11 @@
       "executeSuccess": "Loan executed",
       "executeSuccessDesc": "The on-chain execution completed.",
       "executeError": "Execution failed",
-      "executeErrorDesc": "Could not execute the loan."
+      "executeErrorDesc": "Could not execute the loan.",
+      "approving": "Approving...",
+      "approvingDesc": "Approving token usage.",
+      "txRejected": "Transaction cancelled",
+      "txRejectedDesc": "You cancelled the transaction."
     },
 
     "modal": {
@@ -216,7 +220,11 @@
       "created": "Loan request created.",
       "createFailed": "Failed to create loan request.",
       "submitting": "Creating…",
-      "creating": "Creating..."
+      "creating": "Creating...",
+      "depositingEth": "Depositing ETH...",
+      "depositingEthDesc": "Depositing ETH collateral to the contract.",
+      "txRejected": "Transaction cancelled",
+      "txRejectedDesc": "You cancelled the transaction."
     },
 
     "card": {

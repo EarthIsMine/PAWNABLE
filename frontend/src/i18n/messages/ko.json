@@ -144,7 +144,11 @@
       "executeSuccess": "대출 실행 완료",
       "executeSuccessDesc": "온체인 실행이 완료되었습니다.",
       "executeError": "실행 실패",
-      "executeErrorDesc": "대출 실행에 실패했습니다."
+      "executeErrorDesc": "대출 실행에 실패했습니다.",
+      "approving": "승인 중...",
+      "approvingDesc": "토큰 사용을 승인합니다.",
+      "txRejected": "거래가 취소되었습니다",
+      "txRejectedDesc": "사용자가 거래를 취소했습니다."
     },
 
     "modal": {
@@ -216,7 +220,11 @@
       "created": "대출 요청이 생성되었습니다.",
       "createFailed": "대출 요청 생성에 실패했습니다.",
       "submitting": "생성 중…",
-      "creating": "생성 중..."
+      "creating": "생성 중...",
+      "depositingEth": "ETH 예치 중...",
+      "depositingEthDesc": "담보 ETH를 컨트랙트에 예치합니다.",
+      "txRejected": "거래가 취소되었습니다",
+      "txRejectedDesc": "사용자가 거래를 취소했습니다."
     },
 
     "card": {
