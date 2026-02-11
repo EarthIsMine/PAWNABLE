@@ -222,6 +222,14 @@ export default function CreateLoanPage() {
         throw new Error("Missing verifying contract address");
       }
 
+      if (CHAIN_ID !== 1 && typeof window !== "undefined" && window.ethereum) {
+        const currentChainId = await window.ethereum.request({ method: "eth_chainId" });
+        const expectedChainId = `0x${CHAIN_ID.toString(16)}`;
+        if (currentChainId !== expectedChainId) {
+          await walletService.switchNetwork(expectedChainId);
+        }
+      }
+
       const collateral = collaterals[0];
       const principalToken = tokens.find((t) => t.address === principalTokenAddress);
       const collateralToken = tokens.find((t) => t.address === collateral.token_address);
@@ -246,20 +254,20 @@ export default function CreateLoanPage() {
         verifyingContract: VERIFYING_CONTRACT,
       };
 
-      const message = {
+      const typedMessage = {
         borrower: user.wallet_address,
         collateralToken: collateralToken.address,
         collateralAmount: collateralAmountRaw,
         principalToken: principalToken.address,
         principalAmount: principalAmountRaw,
-        interestBps,
-        durationSeconds,
+        interestBps: String(interestBps),
+        durationSeconds: String(durationSeconds),
         nonce,
         deadline,
       };
 
-      const intentHash = TypedDataEncoder.hash(domain, EIP712_TYPES, message);
-      const signature = await walletService.signTypedData(domain, EIP712_TYPES, message);
+      const intentHash = TypedDataEncoder.hash(domain, EIP712_TYPES, typedMessage);
+      const signature = await walletService.signTypedData(domain, EIP712_TYPES, typedMessage);
 
       await intentAPI.create({
         chainId: CHAIN_ID,

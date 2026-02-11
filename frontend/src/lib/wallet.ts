@@ -97,6 +97,28 @@ export class WalletService {
     }
 
     try {
+      if (typeof window !== "undefined" && window.ethereum) {
+        const from = await this.signer.getAddress()
+        const payload = {
+          types: {
+            ...types,
+            EIP712Domain: [
+              { name: "name", type: "string" },
+              { name: "version", type: "string" },
+              { name: "chainId", type: "uint256" },
+              { name: "verifyingContract", type: "address" },
+            ],
+          },
+          domain,
+          primaryType: Object.keys(types)[0],
+          message: value,
+        }
+        return await window.ethereum.request({
+          method: "eth_signTypedData_v4",
+          params: [from, JSON.stringify(payload)],
+        })
+      }
+
       return await this.signer.signTypedData(domain, types, value)
     } catch (error: any) {
       throw new Error(error.message || "Failed to sign typed data")
