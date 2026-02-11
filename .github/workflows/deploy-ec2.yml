@@ -32,7 +32,13 @@ jobs:
           port: ${{ secrets.EC2_PORT || 22 }}
           script: |
             set -e
+            if [ -z "$APP_DIR" ]; then
+              echo "APP_DIR is empty. Check EC2_APP_DIR secret."
+              exit 1
+            fi
+            echo "APP_DIR=$APP_DIR"
             cd "$APP_DIR"
+            ls -la
             git fetch --all
             git reset --hard origin/main
             if [ -n "$FRONTEND_ENV" ]; then
