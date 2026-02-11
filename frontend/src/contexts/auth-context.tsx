@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { authAPI, userAPI } from "@/lib/api";
 import { walletService } from "@/lib/wallet";
 import { contractService } from "@/lib/contracts";
 
@@ -19,8 +18,6 @@ interface AuthContextType {
   connect: () => Promise<void>;
   disconnect: () => void;
 }
-
-const TOKEN_KEY = "pawnable_token";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -48,53 +45,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const checkAuth = async () => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      await authAPI.verify();
-      const me = await userAPI.getMe();
-      setUser(me);
-      setIsConnected(true);
-    } catch (error: unknown) {
-      console.error("Auth check failed:", error);
-      localStorage.removeItem(TOKEN_KEY);
-      setUser(null);
-      setIsConnected(false);
-    } finally {
-      setIsLoading(false);
-    }
+    setIsLoading(false);
   };
 
   const connect = async () => {
     setIsLoading(true);
 
     try {
-      // 1) Wallet connect (address 확보)
+      // Wallet connect (address 확보)
       const walletAddress = await walletService.connect();
 
-      // 2) 타임스탬프 발급
-      const { timestamp } = await authAPI.getMessage(walletAddress);
-
-      // 3) 클라이언트에서 메시지 생성 (서버와 동일한 형식)
-      const message = `PAWNABLE Auth - Wallet: ${walletAddress} Timestamp: ${timestamp}`;
-
-      // 4) 서명
-      const signature = await walletService.signMessage(message);
-
-      // 5) 로그인 → 토큰 저장
-      const { token } = await authAPI.login(walletAddress, signature, timestamp);
-      localStorage.setItem(TOKEN_KEY, token);
-
-      // 6) 최종 사용자 정보 확정
-      const me = await userAPI.getMe();
-      setUser(me);
+      // 서버 로그인 제거. 지갑 주소만 로컬 상태로 유지.
+      setUser({ user_id: walletAddress, wallet_address: walletAddress });
       setIsConnected(true);
 
-      // 7) Initialize smart contracts
+      // Initialize smart contracts
       try {
         await contractService.initialize();
         console.log("Smart contracts initialized");
@@ -105,8 +70,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error: unknown) {
       console.error("Connection failed:", error);
 
-      // 연결 실패 시 중간 토큰이 남지 않게 정리
-      localStorage.removeItem(TOKEN_KEY);
       setUser(null);
       setIsConnected(false);
 
@@ -119,7 +82,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const disconnect = () => {
-    localStorage.removeItem(TOKEN_KEY);
     walletService.disconnect();
     setUser(null);
     setIsConnected(false);
