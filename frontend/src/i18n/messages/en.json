@@ -44,6 +44,10 @@
     "subtitle": "Experience DeFi directly. Set your own rate, use crypto as collateral, and lend peer-to-peer.",
     "exploreMarketplace": "Explore marketplace",
     "createLoanRequest": "Create loan request",
+    "toast": {
+      "connectWalletTitle": "Wallet required",
+      "connectWalletDesc": "Connect your wallet before creating a loan request."
+    },
     "stats": {
       "platformFee": "Platform fee",
       "directMatching": "Direct matching",

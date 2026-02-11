@@ -44,6 +44,10 @@
     "subtitle": "최고의 DeFi를 직접 경험하세요. 직접 금리를 설정하고, 암호화폐를 담보로 사용하며, P2P로 대출하세요.",
     "exploreMarketplace": "마켓플레이스 탐색",
     "createLoanRequest": "대출 요청 생성",
+    "toast": {
+      "connectWalletTitle": "지갑 연결 필요",
+      "connectWalletDesc": "대출 요청을 생성하기 전에 지갑을 연결해주세요."
+    },
     "stats": {
       "platformFee": "플랫폼 수수료",
       "directMatching": "직접 매칭",

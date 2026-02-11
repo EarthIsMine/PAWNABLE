@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import styled from "@emotion/styled";
 import { useTranslations } from "next-intl";
 import { ArrowRight, Shield, TrendingUp, Users, Clock } from "lucide-react";
@@ -8,6 +9,8 @@ import { ArrowRight, Shield, TrendingUp, Users, Clock } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/contexts/auth-context";
+import { useToast } from "@/hooks/use-toast";
 
 const Page = styled.div`
   min-height: 100dvh;
@@ -267,7 +270,23 @@ const FooterLink = styled(Link)`
 `;
 
 export default function HomePage() {
+  const router = useRouter();
+  const { isConnected } = useAuth();
+  const { toast } = useToast();
   const t = useTranslations("home");
+
+  const handleCreateLoan = () => {
+    if (!isConnected) {
+      toast({
+        title: t("toast.connectWalletTitle"),
+        description: t("toast.connectWalletDesc"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    router.push("/create-loan");
+  };
 
   return (
     <Page>
@@ -293,11 +312,9 @@ export default function HomePage() {
                   </Button>
                 </Link>
 
-                <Link href="/create-loan">
-                  <Button size="lg" variant="outline">
-                    {t("createLoanRequest")}
-                  </Button>
-                </Link>
+                <Button size="lg" variant="outline" onClick={handleCreateLoan}>
+                  {t("createLoanRequest")}
+                </Button>
               </ButtonRow>
             </Center>
           </HeroWrap>

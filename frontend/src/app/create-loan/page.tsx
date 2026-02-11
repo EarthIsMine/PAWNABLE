@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import styled from "@emotion/styled";
 import { useTranslations } from "next-intl";
 import { Loader2, Plus, X } from "lucide-react";
+import { TypedDataEncoder, parseUnits } from "ethers";
 
 import { Navbar } from "@/components/navbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,15 +17,33 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 
 import { useAuth } from "@/contexts/auth-context";
-import { assetAPI, loanAPI, type Asset } from "@/lib/api";
+import { tokenAPI, intentAPI, type Token } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { contractService } from "@/lib/contract";
+import { walletService } from "@/lib/wallet";
 
 type CollateralRow = {
-  asset_id: string;
+  token_address: string;
   amount: string; // input용
   token_id?: string | null;
 };
+
+const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID || "1337");
+const VERIFYING_CONTRACT =
+  process.env.NEXT_PUBLIC_LOAN_CONTRACT_ADDRESS || process.env.NEXT_PUBLIC_LOAN_CONTRACT || "";
+
+const EIP712_TYPES = {
+  LoanIntent: [
+    { name: "borrower", type: "address" },
+    { name: "collateralToken", type: "address" },
+    { name: "collateralAmount", type: "uint256" },
+    { name: "principalToken", type: "address" },
+    { name: "principalAmount", type: "uint256" },
+    { name: "interestBps", type: "uint256" },
+    { name: "durationSeconds", type: "uint256" },
+    { name: "nonce", type: "uint256" },
+    { name: "deadline", type: "uint256" },
+  ],
+} as const;
 
 function isPositiveNumber(value: string) {
   const n = Number(value);
@@ -39,15 +58,17 @@ export default function CreateLoanPage() {
   const t = useTranslations("createLoan");
   const tc = useTranslations("common");
 
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const [tokens, setTokens] = useState<Token[]>([]);
   const [isLoadingAssets, setIsLoadingAssets] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [loanAssetId, setLoanAssetId] = useState("");
+  const [principalTokenAddress, setPrincipalTokenAddress] = useState("");
   const [loanAmount, setLoanAmount] = useState("");
   const [interestRate, setInterestRate] = useState("");
   const [durationDays, setDurationDays] = useState("");
-  const [collaterals, setCollaterals] = useState<CollateralRow[]>([{ asset_id: "", amount: "" }]);
+  const [collaterals, setCollaterals] = useState<CollateralRow[]>([
+    { token_address: "", amount: "" },
+  ]);
 
   const blocked = !authLoading && !isConnected;
 
@@ -60,8 +81,8 @@ export default function CreateLoanPage() {
   const loadAssets = async () => {
     try {
       setIsLoadingAssets(true);
-      const data = await assetAPI.getAll();
-      setAssets(data);
+      const data = await tokenAPI.getAll({ isAllowed: true });
+      setTokens(data);
     } catch {
       toast({
         title: tc("error"),
@@ -73,42 +94,27 @@ export default function CreateLoanPage() {
     }
   };
 
-  const loanAssets = useMemo(
-    () => assets.filter((a) =>
-      a.asset_type.toLowerCase() === "erc20" ||
-      a.asset_type.toLowerCase() === "native" ||
-      a.asset_type === "token" ||
-      a.asset_type === "stablecoin"
-    ),
-    [assets],
-  );
-
-  const collateralAssets = useMemo(
-    () => assets.filter((a) =>
-      a.asset_type.toLowerCase() === "erc20" ||
-      a.asset_type.toLowerCase() === "native" ||
-      a.asset_type === "token" ||
-      a.asset_type === "nft"
-    ),
-    [assets],
+  const allowedTokens = useMemo(
+    () => tokens.filter((t) => t.isAllowed),
+    [tokens],
   );
 
   const loanAssetOptions = useMemo(
     () =>
-      loanAssets.map((a) => ({
-        value: a.asset_id,
-        label: `${a.symbol} - ${a.name}`,
+      allowedTokens.map((t) => ({
+        value: t.address,
+        label: `${t.symbol} (${t.address.slice(0, 6)}...${t.address.slice(-4)})`,
       })),
-    [loanAssets],
+    [allowedTokens],
   );
 
   const collateralOptions = useMemo(
     () =>
-      collateralAssets.map((a) => ({
-        value: a.asset_id,
-        label: `${a.symbol} - ${a.name}`,
+      allowedTokens.map((t) => ({
+        value: t.address,
+        label: `${t.symbol} (${t.address.slice(0, 6)}...${t.address.slice(-4)})`,
       })),
-    [collateralAssets],
+    [allowedTokens],
   );
 
   const totalRepayment = useMemo(() => {
@@ -117,7 +123,8 @@ export default function CreateLoanPage() {
     return principal * (1 + rate / 100);
   }, [loanAmount, interestRate]);
 
-  const addCollateral = () => setCollaterals((prev) => [...prev, { asset_id: "", amount: "" }]);
+  const addCollateral = () =>
+    setCollaterals((prev) => [...prev, { token_address: "", amount: "" }]);
 
   const removeCollateral = (index: number) =>
     setCollaterals((prev) => prev.filter((_, i) => i !== index));
@@ -140,7 +147,7 @@ export default function CreateLoanPage() {
     }
 
     if (
-      !loanAssetId ||
+      !principalTokenAddress ||
       !isPositiveNumber(loanAmount) ||
       !isPositiveNumber(interestRate) ||
       !durationDays
@@ -167,7 +174,7 @@ export default function CreateLoanPage() {
 
     if (
       collaterals.length === 0 ||
-      collaterals.some((c) => !c.asset_id || !isPositiveNumber(c.amount))
+      collaterals.some((c) => !c.token_address || !isPositiveNumber(c.amount))
     ) {
       toast({
         title: tc("error"),
@@ -186,69 +193,71 @@ export default function CreateLoanPage() {
 
     setIsSubmitting(true);
     try {
-      const repayDueAt = new Date();
-      repayDueAt.setDate(repayDueAt.getDate() + Number(durationDays));
+      if (!VERIFYING_CONTRACT) {
+        throw new Error("Missing verifying contract address");
+      }
 
-      // 1. 먼저 DB에 대출 생성 (loan_id 얻기)
-      const createdLoan = await loanAPI.create({
-        borrower_id: user.user_id,
-        loan_asset_id: loanAssetId,
-        loan_amount: Number(loanAmount),
-        interest_rate_pct: Number(interestRate),
-        total_repay_amount: totalRepayment,
-        repay_due_at: repayDueAt.toISOString(),
-        collaterals: collaterals.map((c) => ({
-          asset_id: c.asset_id,
-          amount: Number(c.amount),
-          token_id: c.token_id ?? null,
-        })),
+      const collateral = collaterals[0];
+      const principalToken = tokens.find((t) => t.address === principalTokenAddress);
+      const collateralToken = tokens.find((t) => t.address === collateral.token_address);
+
+      if (!principalToken || !collateralToken) {
+        throw new Error("Invalid token selection");
+      }
+
+      const durationSeconds = Number(durationDays) * 24 * 60 * 60;
+      const now = Math.floor(Date.now() / 1000);
+      const deadline = (now + durationSeconds).toString();
+
+      const principalAmountRaw = parseUnits(loanAmount, principalToken.decimals).toString();
+      const collateralAmountRaw = parseUnits(collateral.amount, collateralToken.decimals).toString();
+      const interestBps = Math.round(Number(interestRate) * 100);
+      const nonce = String(Date.now());
+
+      const domain = {
+        name: "PawnableLoan",
+        version: "1",
+        chainId: CHAIN_ID,
+        verifyingContract: VERIFYING_CONTRACT,
+      };
+
+      const message = {
+        borrower: user.wallet_address,
+        collateralToken: collateralToken.address,
+        collateralAmount: collateralAmountRaw,
+        principalToken: principalToken.address,
+        principalAmount: principalAmountRaw,
+        interestBps,
+        durationSeconds,
+        nonce,
+        deadline,
+      };
+
+      const intentHash = TypedDataEncoder.hash(domain, EIP712_TYPES, message);
+      const signature = await walletService.signTypedData(domain, EIP712_TYPES, message);
+
+      await intentAPI.create({
+        chainId: CHAIN_ID,
+        verifyingContract: VERIFYING_CONTRACT,
+        borrower: user.wallet_address,
+        collateralToken: collateralToken.address,
+        collateralAmount: collateralAmountRaw,
+        principalToken: principalToken.address,
+        principalAmount: principalAmountRaw,
+        interestBps,
+        durationSeconds,
+        nonce,
+        deadline,
+        intentHash,
+        signature,
       });
 
       toast({
-        title: "대출 DB 생성 완료",
-        description: "블록체인에 담보를 전송합니다...",
+        title: tc("success"),
+        description: t("toast.createSuccess"),
       });
 
-      // 2. 블록체인에 requestLoan 호출 (담보 전송)
-      try {
-        await contractService.initialize();
-
-        // 현재 시간 + 대출 기간(일)로 timestamp 계산
-        const now = Math.floor(Date.now() / 1000); // 현재 시간 (초)
-        const durationSeconds = Number(durationDays) * 24 * 60 * 60; // 일 -> 초 변환
-        const dueTimestamp = now + durationSeconds;
-
-        console.log("Current time:", now);
-        console.log("Duration (days):", durationDays);
-        console.log("Duration (seconds):", durationSeconds);
-        console.log("Due timestamp:", dueTimestamp);
-
-        // 담보는 첫 번째 collateral의 amount를 사용 (현재는 단일 담보만 지원)
-        const collateralAmount = collaterals[0]?.amount || "0";
-
-        await contractService.requestLoan(
-          createdLoan.loan.loan_id, // DB에서 생성된 loan_id 사용
-          loanAmount,
-          totalRepayment.toString(),
-          collateralAmount,
-          dueTimestamp
-        );
-
-        toast({
-          title: tc("success"),
-          description: t("toast.createSuccess") + " 담보가 스마트 컨트랙트로 전송되었습니다.",
-        });
-
-        router.push("/dashboard");
-      } catch (blockchainError) {
-        toast({
-          title: "블록체인 오류",
-          description: blockchainError instanceof Error ? blockchainError.message : "담보 전송 실패",
-          variant: "destructive",
-        });
-        // 블록체인 실패 시 DB 대출도 취소해야 할 수 있음
-        throw blockchainError;
-      }
+      router.push("/dashboard");
     } catch (err: unknown) {
       toast({
         title: tc("error"),
@@ -315,8 +324,8 @@ export default function CreateLoanPage() {
                   <Label htmlFor="loan-asset">{t("form.asset")}</Label>
                   <Select
                     id="loan-asset"
-                    value={loanAssetId}
-                    onValueChange={setLoanAssetId}
+                    value={principalTokenAddress}
+                    onValueChange={setPrincipalTokenAddress}
                     placeholder={t("form.selectAsset")}
                     options={loanAssetOptions}
                   />
@@ -387,8 +396,8 @@ export default function CreateLoanPage() {
                       </Label>
                       <Select
                         id={`collateral-asset-${index}`}
-                        value={c.asset_id}
-                        onValueChange={(v) => updateCollateral(index, { asset_id: v })}
+                        value={c.token_address}
+                        onValueChange={(v) => updateCollateral(index, { token_address: v })}
                         placeholder={t("form.selectAsset")}
                         options={collateralOptions}
                       />

@@ -1,4 +1,4 @@
-import { BrowserProvider, type JsonRpcSigner } from "ethers"
+import { BrowserProvider, type JsonRpcSigner, type TypedDataDomain, type TypedDataField } from "ethers"
 
 declare global {
   interface Window {
@@ -76,6 +76,27 @@ export class WalletService {
       return signature
     } catch (error: any) {
       throw new Error(error.message || "Failed to sign message")
+    }
+  }
+
+  async signTypedData(
+    domain: TypedDataDomain,
+    types: Record<string, TypedDataField[]>,
+    value: Record<string, unknown>
+  ): Promise<string> {
+    if (USE_MOCK_DATA) {
+      console.log("[v0] Mock signing typed data:", { domain, types, value })
+      return "0xmocksignature1234567890abcdef"
+    }
+
+    if (!this.signer) {
+      throw new Error("Wallet not connected")
+    }
+
+    try {
+      return await this.signer.signTypedData(domain, types, value)
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to sign typed data")
     }
   }
 

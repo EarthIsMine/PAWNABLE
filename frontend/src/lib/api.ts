@@ -35,6 +35,33 @@ export interface Asset {
   decimals?: number | null;
 }
 
+export interface Token {
+  chainId: number;
+  address: string;
+  symbol: string;
+  decimals: number;
+  isNative: boolean;
+  isAllowed: boolean;
+}
+
+export interface Intent {
+  id: string;
+  chainId: number;
+  borrowerAddress: string;
+  status: "ACTIVE" | "UNAVAILABLE" | "EXPIRED" | "CANCELLED" | "EXECUTED";
+  verifyingContract: string;
+  collateralTokenAddress: string;
+  collateralAmount: string;
+  principalTokenAddress: string;
+  principalAmount: string;
+  interestBps: number;
+  durationSeconds: number;
+  intentNonce: string;
+  deadlineTimestamp: string;
+  intentHash: string;
+  signature: string;
+}
+
 export type LoanStatus = "pending" | "matched" | "active" | "repaid" | "liquidated" | "cancelled";
 
 export interface CollateralInput {
@@ -104,6 +131,21 @@ async function mockFetchAPI<T>(endpoint: string, options: RequestInit = {}): Pro
   if (endpoint.match(/^\/loans\/[^/]+$/) && !endpoint.includes("/match") && !endpoint.includes("/activate")) {
     const loanId = endpoint.split("/").pop();
     return mockLoans.find((l) => l.loan_id === loanId) as T;
+  }
+
+  // Tokens (mock from assets if present)
+  if (endpoint === "/tokens") {
+    const tokens = mockAssets
+      .filter((a) => Boolean(a.contract_address))
+      .map((a) => ({
+        chainId: 1337,
+        address: a.contract_address as string,
+        symbol: a.symbol,
+        decimals: a.decimals ?? 18,
+        isNative: false,
+        isAllowed: true,
+      }));
+    return tokens as T;
   }
 
   // Default
@@ -244,6 +286,43 @@ export const loanAPI = {
   cancel(loanId: string) {
     return fetchAPI<void>(`/loans/${loanId}`, {
       method: "DELETE",
+    });
+  },
+};
+
+// Token APIs
+export const tokenAPI = {
+  getAll(params?: { isAllowed?: boolean }) {
+    const query = params?.isAllowed == null ? "" : `?isAllowed=${String(params.isAllowed)}`;
+    return fetchAPI<Token[]>(`/tokens${query}`);
+  },
+
+  getByAddress(address: string, chainId?: number) {
+    const query = chainId == null ? "" : `?chainId=${chainId}`;
+    return fetchAPI<Token>(`/tokens/${address}${query}`);
+  },
+};
+
+// Intent APIs
+export const intentAPI = {
+  create(data: {
+    chainId: number;
+    verifyingContract: string;
+    borrower: string;
+    collateralToken: string;
+    collateralAmount: string;
+    principalToken: string;
+    principalAmount: string;
+    interestBps: number;
+    durationSeconds: number;
+    nonce: string;
+    deadline: string;
+    intentHash: string;
+    signature: string;
+  }) {
+    return fetchAPI<Intent>("/intents", {
+      method: "POST",
+      body: JSON.stringify(data),
     });
   },
 };
