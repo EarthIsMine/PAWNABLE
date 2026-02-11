@@ -116,6 +116,18 @@ export default function MarketplacePage() {
       const principalToken = intent.principalToken;
       const principalIsNative = Boolean(principalToken?.isNative);
 
+      // ERC20 원금인 경우 approve 먼저 실행
+      if (!principalIsNative) {
+        toast({
+          title: t("toast.approving", { defaultMessage: "승인 중..." }),
+          description: t("toast.approvingDesc", { defaultMessage: "토큰 사용을 승인합니다." }),
+        });
+        await contractService.approveTokenForLoan(
+          intent.principalTokenAddress,
+          intent.principalAmount,
+        );
+      }
+
       const result = await contractService.executeLoan({
         borrower: intent.borrowerAddress,
         collateralToken: intent.collateralTokenAddress,

@@ -1,10 +1,10 @@
 import { ethers, BrowserProvider, Contract } from "ethers"
 
 // 컨트랙트 주소 (환경변수로 관리)
-const LOAN_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_LOAN_CONTRACT_ADDRESS || process.env.NEXT_PUBLIC_LOAN_CONTRACT || "0x68B1D87F95878fE05B998F19b66F4baba5De1aed"
-const USDT_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_TOKEN_CONTRACT_ADDRESS || process.env.NEXT_PUBLIC_USDT_CONTRACT || "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1"
-const COLLATERAL_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS || process.env.NEXT_PUBLIC_NFT_CONTRACT || "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE"
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8085/api"
+const LOAN_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_LOAN_CONTRACT_ADDRESS || process.env.NEXT_PUBLIC_LOAN_CONTRACT || ""
+const USDT_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_TOKEN_CONTRACT_ADDRESS || process.env.NEXT_PUBLIC_USDT_CONTRACT || ""
+const COLLATERAL_TOKEN_ADDRESS = process.env.NEXT_PUBLIC_NFT_CONTRACT_ADDRESS || process.env.NEXT_PUBLIC_NFT_CONTRACT || ""
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api"
 
 // ABI 정의
 const LOAN_ABI = [
@@ -15,6 +15,9 @@ const LOAN_ABI = [
   "function repayLoan(string loanId) external",
   "function liquidateLoan(string loanId) external",
   "function cancelLoan(string loanId) external",
+  "function nonces(address) external view returns (uint256)",
+  "function depositEth() external payable",
+  "function ethDeposits(address) external view returns (uint256)",
   "function getLoan(string loanId) external view returns (tuple(string loanId, address borrower, address lender, address loanToken, uint256 loanAmount, uint256 repayAmount, uint8 collateralType, address collateralToken, uint256 collateralAmount, uint256 dueTimestamp, uint8 status, uint256 createdAt, uint256 matchedAt, uint256 closedAt))",
   "event LoanRequested(string indexed loanId, address indexed borrower, address loanToken, uint256 loanAmount, uint256 repayAmount, uint8 collateralType, address collateralToken, uint256 collateralAmount, uint256 dueTimestamp)",
   "event LoanMatched(string indexed loanId, address indexed borrower, address indexed lender, uint256 loanAmount)",
@@ -228,6 +231,76 @@ export class ContractService {
     } catch (error: any) {
       console.error("Error executing loan:", error)
       throw new Error(error.message || "Failed to execute loan")
+    }
+  }
+
+  /**
+   * ERC20 토큰을 Loan 컨트랙트에 approve
+   */
+  async approveTokenForLoan(tokenAddress: string, amount: string): Promise<TransactionResult> {
+    if (!this.provider) {
+      await this.initialize()
+    }
+
+    try {
+      const signer = await this.provider!.getSigner()
+      const tokenContract = new Contract(tokenAddress, TOKEN_ABI, signer)
+
+      console.log("Approving token for loan contract:", tokenAddress, amount)
+      const tx = await tokenContract.approve(LOAN_CONTRACT_ADDRESS, amount)
+      const receipt = await tx.wait()
+      console.log("Token approved:", receipt.hash)
+
+      return {
+        hash: receipt.hash,
+        success: receipt.status === 1,
+        blockNumber: receipt.blockNumber,
+      }
+    } catch (error: unknown) {
+      console.error("Error approving token:", error)
+      throw new Error(error instanceof Error ? error.message : "Failed to approve token")
+    }
+  }
+
+  /**
+   * ETH 예치 (native 담보용)
+   */
+  async depositEth(amount: string): Promise<TransactionResult> {
+    if (!this.loanContract) {
+      await this.initialize()
+    }
+
+    try {
+      console.log("Depositing ETH as collateral:", amount)
+      const tx = await this.loanContract!.depositEth({ value: amount })
+      const receipt = await tx.wait()
+      console.log("ETH deposited:", receipt.hash)
+
+      return {
+        hash: receipt.hash,
+        success: receipt.status === 1,
+        blockNumber: receipt.blockNumber,
+      }
+    } catch (error: unknown) {
+      console.error("Error depositing ETH:", error)
+      throw new Error(error instanceof Error ? error.message : "Failed to deposit ETH")
+    }
+  }
+
+  /**
+   * ETH 예치금 잔액 확인
+   */
+  async getEthDeposit(address: string): Promise<string> {
+    if (!this.loanContract) {
+      await this.initialize()
+    }
+
+    try {
+      const deposit = await this.loanContract!.ethDeposits(address)
+      return deposit.toString()
+    } catch (error: unknown) {
+      console.error("Error getting ETH deposit:", error)
+      throw new Error(error instanceof Error ? error.message : "Failed to get ETH deposit")
     }
   }
 

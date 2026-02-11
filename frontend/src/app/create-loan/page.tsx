@@ -44,7 +44,7 @@ const EIP712_TYPES = {
     { name: "nonce", type: "uint256" },
     { name: "deadline", type: "uint256" },
   ],
-} as const;
+};
 
 function isPositiveNumber(value: string) {
   const n = Number(value);
@@ -269,6 +269,16 @@ export default function CreateLoanPage() {
 
       const intentHash = TypedDataEncoder.hash(domain, EIP712_TYPES, typedMessage);
       const signature = await walletService.signTypedData(domain, EIP712_TYPES, typedMessage);
+
+      // ETH 담보인 경우 컨트랙트에 ETH 예치
+      const NATIVE_TOKEN = "0x0000000000000000000000000000000000000000";
+      if (collateralToken.address.toLowerCase() === NATIVE_TOKEN) {
+        toast({
+          title: t("toast.depositingEth", { defaultMessage: "ETH 예치 중..." }),
+          description: t("toast.depositingEthDesc", { defaultMessage: "담보 ETH를 컨트랙트에 예치합니다." }),
+        });
+        await contractService.depositEth(collateralAmountRaw);
+      }
 
       await intentAPI.create({
         chainId: CHAIN_ID,
