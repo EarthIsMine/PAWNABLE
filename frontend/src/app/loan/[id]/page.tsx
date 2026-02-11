@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { contractService } from "@/lib/contract";
 
 import { Loader2, ArrowLeft, Calendar, TrendingUp, Coins, Shield, AlertCircle } from "lucide-react";
-import { format, formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 
 type Detail =
   | { kind: "loan"; data: LoanIndex }
@@ -56,6 +56,28 @@ function toDateSafe(value: string | number | null | undefined) {
     return Number.isNaN(date.getTime()) ? null : date;
   }
   return null;
+}
+
+function formatUtcDate(date: Date) {
+  const iso = date.toISOString();
+  return `${iso.slice(0, 10)} UTC`;
+}
+
+function formatUtcDateTime(date: Date) {
+  const iso = date.toISOString();
+  return `${iso.slice(0, 16).replace("T", " ")} UTC`;
+}
+
+function formatLocalDateTime(date: Date) {
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZoneName: "short",
+  }).format(date);
 }
 
 export default function LoanDetailPage() {
@@ -327,6 +349,9 @@ export default function LoanDetailPage() {
 
   const { principalToken, collateralToken, dueDate, isOverdue } = viewModel;
   const createdAtDate = toDateSafe(viewModel.createdAt);
+  const dueDateUtc = dueDate ? formatUtcDateTime(dueDate) : null;
+  const dueDateLocal = dueDate ? formatLocalDateTime(dueDate) : null;
+  const createdAtLocal = createdAtDate ? formatLocalDateTime(createdAtDate) : null;
 
   const principalDecimals = principalToken?.decimals ?? 18;
   const principalAmount = formatAmount(viewModel.principalAmount, principalDecimals);
@@ -417,7 +442,7 @@ export default function LoanDetailPage() {
                     <RowValueRight>
                       {dueDate ? (
                         <>
-                          <div>{format(dueDate, "PPP")}</div>
+                          <div>{formatUtcDate(dueDate)} · {dueDateLocal}</div>
                           <SmallMuted data-overdue={isOverdue}>
                             {formatDistanceToNow(dueDate, { addSuffix: true })}
                           </SmallMuted>
@@ -508,14 +533,16 @@ export default function LoanDetailPage() {
                   <TimelineItem>
                     <div>{t("timeline.created")}</div>
                     {createdAtDate && (
-                      <SmallMuted>{format(createdAtDate, "PPp")}</SmallMuted>
+                      <SmallMuted>
+                        {formatUtcDateTime(createdAtDate)} · {createdAtLocal}
+                      </SmallMuted>
                     )}
                   </TimelineItem>
 
                   {dueDate && (
                     <TimelineItem>
                       <div>{t("timeline.due")}</div>
-                      <SmallMuted>{format(dueDate, "PPp")}</SmallMuted>
+                      <SmallMuted>{dueDateUtc} · {dueDateLocal}</SmallMuted>
                     </TimelineItem>
                   )}
                 </Timeline>

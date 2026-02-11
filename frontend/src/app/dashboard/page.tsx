@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styled from "@emotion/styled";
-import { format } from "date-fns";
 import { formatUnits } from "ethers";
 import { useTranslations } from "next-intl";
 import { ExternalLink, Loader2, Plus } from "lucide-react";
@@ -287,6 +286,20 @@ export default function DashboardPage() {
   );
 }
 
+function formatUtcDate(date: Date) {
+  const iso = date.toISOString();
+  return `${iso.slice(0, 10)} UTC`;
+}
+
+function formatLocalDate(date: Date) {
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZoneName: "short",
+  }).format(date);
+}
+
 /* ---------------------------------- */
 /* UI pieces                           */
 /* ---------------------------------- */
@@ -387,7 +400,7 @@ function LoanCard({ loan }: { loan: LoanIndex }) {
 
           <MetaRow>
             <MetaLabel>{t("loan.dueDate")}</MetaLabel>
-            <MetaValue>{format(due, "yyyy-MM-dd")}</MetaValue>
+            <MetaValue>{formatUtcDate(due)} · {formatLocalDate(due)}</MetaValue>
           </MetaRow>
         </MetaList>
 
