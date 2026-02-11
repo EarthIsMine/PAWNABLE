@@ -1,0 +1,174 @@
+// Prisma Schema for PAWNABLE
+// Base Chain Only (chain_id = 8453)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =========================
+// USERS
+// =========================
+model User {
+  address    String   @id @db.VarChar(42) // 0x... EOA address
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  intents          Intent[] @relation("BorrowerIntents")
+  borrowedLoans    Loan[]   @relation("BorrowerLoans")
+  lendedLoans      Loan[]   @relation("LenderLoans")
+
+  @@map("users")
+}
+
+// =========================
+// TOKENS
+// =========================
+model Token {
+  chainId    Int      @map("chain_id")
+  address    String   @db.VarChar(42) // ERC20 address or 0x0 for native
+  symbol     String   @db.VarChar(20)
+  decimals   Int
+  isNative   Boolean  @default(false) @map("is_native")
+  isAllowed  Boolean  @default(true) @map("is_allowed")
+  indexedAt  DateTime @default(now()) @map("indexed_at")
+
+  // Relations
+  intentsAsCollateral Intent[] @relation("CollateralToken")
+  intentsAsPrincipal  Intent[] @relation("PrincipalToken")
+
+  @@id([chainId, address])
+  @@index([isAllowed])
+  @@map("tokens")
+}
+
+// =========================
+// INTENTS (EIP-712 off-chain intent)
+// =========================
+model Intent {
+  id                String   @id @default(uuid()) @db.Uuid
+
+  // Chain & Contract
+  chainId           Int      @map("chain_id")
+  verifyingContract String   @map("verifying_contract") @db.VarChar(42)
+
+  // Borrower
+  borrowerAddress   String   @map("borrower_address") @db.VarChar(42)
+
+  // Collateral
+  collateralTokenAddress String   @map("collateral_token_address") @db.VarChar(42)
+  collateralAmount       Decimal  @map("collateral_amount") @db.Decimal(78, 0) // uint256
+
+  // Principal
+  principalTokenAddress  String   @map("principal_token_address") @db.VarChar(42)
+  principalAmount        Decimal  @map("principal_amount") @db.Decimal(78, 0) // uint256
+
+  // Loan Terms
+  interestBps       Int      @map("interest_bps")
+  durationSeconds   Int      @map("duration_seconds")
+
+  // EIP-712 Signature
+  intentNonce       Decimal  @map("intent_nonce") @db.Decimal(78, 0) // uint256
+  deadlineTimestamp BigInt   @map("deadline_timestamp")
+  intentHash        String   @map("intent_hash") @db.VarChar(66) // 0x...
+  signature         String   @db.Text // 0x...
+
+  // Status
+  status            String   @db.VarChar(20) // ACTIVE | UNAVAILABLE | EXPIRED | CANCELLED | EXECUTED
+
+  // Execution Info
+  executedTxHash    String?  @map("executed_tx_hash") @db.VarChar(66)
+  executedLoanId    Decimal? @map("executed_loan_id") @db.Decimal(78, 0)
+
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  borrower          User     @relation("BorrowerIntents", fields: [borrowerAddress], references: [address])
+  collateralToken   Token    @relation("CollateralToken", fields: [chainId, collateralTokenAddress], references: [chainId, address])
+  principalToken    Token    @relation("PrincipalToken", fields: [chainId, principalTokenAddress], references: [chainId, address])
+
+  snapshots         IntentStateSnapshot[]
+  loan              Loan?
+
+  @@unique([chainId, verifyingContract, intentHash])
+  @@index([status])
+  @@index([borrowerAddress])
+  @@index([chainId, status])
+  @@index([deadlineTimestamp])
+  @@map("intents")
+}
+
+// =========================
+// INTENT STATE CACHE
+// =========================
+model IntentStateSnapshot {
+  id                   String   @id @default(uuid()) @db.Uuid
+  intentId             String   @map("intent_id") @db.Uuid
+
+  blockNumber          BigInt   @map("block_number")
+  checkedAt            DateTime @default(now()) @map("checked_at")
+
+  collateralBalance    Decimal  @map("collateral_balance") @db.Decimal(78, 0)
+  collateralAllowance  Decimal  @map("collateral_allowance") @db.Decimal(78, 0) // 0 for native
+
+  derivedStatus        String   @map("derived_status") @db.VarChar(20) // ACTIVE | UNAVAILABLE
+  reason               String?  @db.Text
+
+  // Relations
+  intent               Intent   @relation(fields: [intentId], references: [id], onDelete: Cascade)
+
+  @@index([intentId, checkedAt])
+  @@map("intent_state_snapshots")
+}
+
+// =========================
+// LOANS (on-chain indexed)
+// =========================
+model Loan {
+  id                String   @id @default(uuid()) @db.Uuid
+
+  // Chain & Contract
+  chainId           Int      @map("chain_id")
+  verifyingContract String   @map("verifying_contract") @db.VarChar(42)
+  loanId            Decimal  @map("loan_id") @db.Decimal(78, 0) // on-chain loanId
+
+  // Intent Reference
+  intentId          String?  @unique @map("intent_id") @db.Uuid
+
+  // Parties
+  borrowerAddress   String   @map("borrower_address") @db.VarChar(42)
+  lenderAddress     String   @map("lender_address") @db.VarChar(42)
+
+  // Timestamps
+  startTimestamp    BigInt   @map("start_timestamp")
+  dueTimestamp      BigInt   @map("due_timestamp")
+
+  // Status
+  status            String   @db.VarChar(20) // ONGOING | REPAID | CLAIMED
+
+  // Transaction Hashes
+  startTxHash       String   @map("start_tx_hash") @db.VarChar(66)
+  repaidTxHash      String?  @map("repaid_tx_hash") @db.VarChar(66)
+  claimedTxHash     String?  @map("claimed_tx_hash") @db.VarChar(66)
+
+  indexedAt         DateTime @default(now()) @map("indexed_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  intent            Intent?  @relation(fields: [intentId], references: [id])
+  borrower          User     @relation("BorrowerLoans", fields: [borrowerAddress], references: [address])
+  lender            User     @relation("LenderLoans", fields: [lenderAddress], references: [address])
+
+  @@unique([chainId, loanId])
+  @@index([status])
+  @@index([borrowerAddress])
+  @@index([lenderAddress])
+  @@index([dueTimestamp, status])
+  @@map("loans")
+}

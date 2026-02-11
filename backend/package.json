@@ -1,38 +1,36 @@
 {
-  "name": "@pawnable/backend",
+  "name": "pawnable-backend",
   "version": "1.0.0",
-  "description": "",
-  "license": "MIT",
-  "author": "",
-  "type": "commonjs",
-  "main": "index.ts",
+  "description": "PAWNABLE P2P Lending Backend",
+  "type": "module",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "tsx index.ts",
-    "dev": "tsx watch index.ts",
-    "seed": "tsx seed.ts",
-    "seed:test-users": "tsx seed-test-users.ts",
-    "test:token": "tsx scripts/generate-test-token.ts"
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "seed": "tsx src/scripts/seed.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "prisma:push": "prisma db push"
   },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
   "dependencies": {
-    "@electric-sql/pglite": "^0.3.14",
+    "@prisma/client": "^6.2.0",
+    "express": "^4.18.2",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "ethers": "^6.16.0",
-    "express": "^5.1.0",
-    "jsonwebtoken": "^9.0.3",
-    "pg": "^8.16.3",
-    "pg-hstore": "^2.3.4",
-    "reflect-metadata": "^0.2.2",
-    "typeorm": "^0.3.28",
-    "uuid": "^13.0.0"
+    "dotenv": "^16.3.1",
+    "ethers": "^6.9.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.5",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/pg": "^8.16.0",
-    "@types/uuid": "^11.0.0",
-    "tsx": "^4.20.6"
+    "@types/express": "^4.17.21",
+    "@types/cors": "^2.8.17",
+    "@types/node": "^20.10.0",
+    "prisma": "^6.2.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
   }
 }
