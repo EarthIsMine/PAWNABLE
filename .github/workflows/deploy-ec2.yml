@@ -33,6 +33,11 @@ jobs:
           envs: APP_DIR,FRONTEND_ENV,BACKEND_ENV
           script: |
             set -e
+            export NVM_DIR="$HOME/.nvm"
+            if [ -s "$NVM_DIR/nvm.sh" ]; then
+              . "$NVM_DIR/nvm.sh"
+              nvm use --lts
+            fi
             if [ -z "$APP_DIR" ]; then
               echo "APP_DIR is empty. Check EC2_APP_DIR secret."
               exit 1
