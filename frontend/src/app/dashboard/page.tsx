@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import styled from "@emotion/styled";
 import { format } from "date-fns";
+import { formatUnits } from "ethers";
 import { useTranslations } from "next-intl";
 import { ExternalLink, Loader2, Plus } from "lucide-react";
 
@@ -14,11 +15,15 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/auth-context";
-import { assetAPI, loanAPI, type Asset, type Loan } from "@/lib/api";
+import { intentAPI, loanAPI, type Intent, type LoanIndex, type LoanListResponse } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
-/** asset map */
-type AssetMap = Record<string, Asset>;
+type IntentListResponse = {
+  intents: Intent[];
+  total: number;
+  limit: number;
+  offset: number;
+};
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -27,9 +32,8 @@ export default function DashboardPage() {
   const t = useTranslations("dashboard");
   const c = useTranslations("common");
 
-  const [borrowedLoans, setBorrowedLoans] = useState<Loan[]>([]);
-  const [lentLoans, setLentLoans] = useState<Loan[]>([]);
-  const [assets, setAssets] = useState<AssetMap>({});
+  const [borrowedIntents, setBorrowedIntents] = useState<Intent[]>([]);
+  const [lentLoans, setLentLoans] = useState<LoanIndex[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -38,26 +42,24 @@ export default function DashboardPage() {
       router.push("/");
       return;
     }
-    void loadData(user.user_id);
+    void loadData(user.wallet_address);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, isConnected, user?.user_id]);
+  }, [authLoading, isConnected, user?.wallet_address]);
 
-  const loadData = async (userId: string) => {
+  const loadData = async (walletAddress: string) => {
     try {
       setIsLoading(true);
 
-      const [borrowed, lent, assetsData] = await Promise.all([
-        loanAPI.getByBorrower(userId),
-        loanAPI.getByLender(userId),
-        assetAPI.getAll(),
+      const [borrowedRes, lentRes] = await Promise.all([
+        intentAPI.getAll({ borrower: walletAddress, limit: 50 }),
+        loanAPI.getAll({ lender: walletAddress, limit: 50 }),
       ]);
 
-      setBorrowedLoans(borrowed);
-      setLentLoans(lent);
+      const borrowed = (borrowedRes as IntentListResponse).intents ?? [];
+      const lent = (lentRes as LoanListResponse).loans ?? [];
 
-      const map: AssetMap = {};
-      for (const a of assetsData) map[a.asset_id] = a;
-      setAssets(map);
+      setBorrowedIntents(borrowed);
+      setLentLoans(lent);
     } catch (err: unknown) {
       console.error("Failed to load dashboard:", err);
       toast({
@@ -80,8 +82,8 @@ export default function DashboardPage() {
     return `${user.wallet_address.slice(0, 6)}...${user.wallet_address.slice(-4)}`;
   }, [user]);
 
-  const statsBorrow = useMemo(() => calcStats(borrowedLoans, true), [borrowedLoans]);
-  const statsLend = useMemo(() => calcStats(lentLoans, false), [lentLoans]);
+  const statsBorrow = useMemo(() => calcIntentStats(borrowedIntents), [borrowedIntents]);
+  const statsLend = useMemo(() => calcLoanStats(lentLoans), [lentLoans]);
 
   if (authLoading || isLoading) {
     return (
@@ -144,8 +146,8 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle>{t("kpi.totalBorrowed.title")}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <KpiValue>{statsBorrow.totalAmount.toFixed(2)}</KpiValue>
+          <CardContent>
+              <KpiValue>{statsBorrow.totalAmountDisplay}</KpiValue>
               <KpiMeta>{t("kpi.totalBorrowed.hint")}</KpiMeta>
             </CardContent>
           </Card>
@@ -154,8 +156,8 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle>{t("kpi.totalLent.title")}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <KpiValue>{statsLend.totalAmount.toFixed(2)}</KpiValue>
+          <CardContent>
+              <KpiValue>{statsLend.totalAmountDisplay}</KpiValue>
               <KpiMeta>{t("kpi.totalLent.hint")}</KpiMeta>
             </CardContent>
           </Card>
@@ -172,7 +174,7 @@ export default function DashboardPage() {
             <Tabs defaultValue="borrowed">
               <TabsList>
                 <TabsTrigger value="borrowed">
-                  {t("tabs.borrowed")} ({borrowedLoans.length})
+                  {t("tabs.borrowed")} ({borrowedIntents.length})
                 </TabsTrigger>
                 <TabsTrigger value="lent">
                   {t("tabs.lent")} ({lentLoans.length})
@@ -180,7 +182,7 @@ export default function DashboardPage() {
               </TabsList>
 
               <TabsContent value="borrowed">
-                {borrowedLoans.length === 0 ? (
+                {borrowedIntents.length === 0 ? (
                   <EmptyCard>
                     <EmptyTitle>{t("empty.borrowed.title")}</EmptyTitle>
                     <EmptyDesc>{t("empty.borrowed.description")}</EmptyDesc>
@@ -190,8 +192,8 @@ export default function DashboardPage() {
                   </EmptyCard>
                 ) : (
                   <ListGrid>
-                    {borrowedLoans.map((loan) => (
-                      <LoanCard key={loan.loan_id} loan={loan} assets={assets} />
+                    {borrowedIntents.map((intent) => (
+                      <IntentCard key={intent.id} intent={intent} />
                     ))}
                   </ListGrid>
                 )}
@@ -209,7 +211,7 @@ export default function DashboardPage() {
                 ) : (
                   <ListGrid>
                     {lentLoans.map((loan) => (
-                      <LoanCard key={loan.loan_id} loan={loan} assets={assets} />
+                      <LoanCard key={loan.id} loan={loan} />
                     ))}
                   </ListGrid>
                 )}
@@ -226,11 +228,21 @@ export default function DashboardPage() {
 /* UI pieces                           */
 /* ---------------------------------- */
 
-function LoanCard({ loan, assets }: { loan: Loan; assets: AssetMap }) {
+function IntentCard({ intent }: { intent: Intent }) {
   const t = useTranslations("dashboard");
 
-  const asset = assets[loan.loan_asset_id];
-  const due = new Date(loan.repay_due_at);
+  const principalToken = intent.principalToken;
+  const collateralToken = intent.collateralToken;
+
+  const principalAmount = principalToken
+    ? formatUnits(BigInt(intent.principalAmount), principalToken.decimals)
+    : intent.principalAmount;
+
+  const collateralAmount = collateralToken
+    ? formatUnits(BigInt(intent.collateralAmount), collateralToken.decimals)
+    : intent.collateralAmount;
+
+  const due = new Date(Number(intent.deadlineTimestamp) * 1000);
 
   return (
     <Card>
@@ -238,27 +250,76 @@ function LoanCard({ loan, assets }: { loan: Loan; assets: AssetMap }) {
         <CardTopRow>
           <CardTitleBox>
             <AmountLine>
-              {loan.loan_amount} {asset?.symbol ?? ""}
+              {principalAmount} {principalToken?.symbol ?? ""}
             </AmountLine>
-            <AssetName>{asset?.name ?? t("unknownAsset")}</AssetName>
+            <AssetName>{t("intent.principal")}</AssetName>
           </CardTitleBox>
 
-          <StatusPill data-status={loan.status}>{loan.status.toUpperCase()}</StatusPill>
+          <StatusPill data-status={intent.status}>{intent.status}</StatusPill>
         </CardTopRow>
       </CardHeader>
 
       <CardContent>
         <MetaList>
           <MetaRow>
-            <MetaLabel>{t("loan.interest")}</MetaLabel>
-            <MetaValueAccent>{loan.interest_rate_pct.toFixed(2)}%</MetaValueAccent>
+            <MetaLabel>{t("intent.interest")}</MetaLabel>
+            <MetaValueAccent>{(intent.interestBps / 100).toFixed(2)}%</MetaValueAccent>
           </MetaRow>
 
           <MetaRow>
-            <MetaLabel>{t("loan.totalRepayment")}</MetaLabel>
+            <MetaLabel>{t("intent.collateral")}</MetaLabel>
             <MetaValue>
-              {loan.total_repay_amount} {asset?.symbol ?? ""}
+              {collateralAmount} {collateralToken?.symbol ?? ""}
             </MetaValue>
+          </MetaRow>
+
+          <MetaRow>
+            <MetaLabel>{t("intent.deadline")}</MetaLabel>
+            <MetaValue>{format(due, "yyyy-MM-dd")}</MetaValue>
+          </MetaRow>
+        </MetaList>
+
+        <Link href={`/loan/${intent.id}`}>
+          <Button variant="outline">
+            {t("loan.viewDetails")}
+            <ExternalLink className="ml-2 h-3 w-3" />
+          </Button>
+        </Link>
+      </CardContent>
+    </Card>
+  );
+}
+
+function LoanCard({ loan }: { loan: LoanIndex }) {
+  const t = useTranslations("dashboard");
+
+  const intent = loan.intent;
+  const principalToken = intent?.principalToken;
+  const principalAmount = intent?.principalAmount
+    ? formatUnits(BigInt(intent.principalAmount), intent.principalToken.decimals)
+    : "-";
+  const due = new Date(Number(loan.dueTimestamp) * 1000);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTopRow>
+          <CardTitleBox>
+            <AmountLine>
+              {principalAmount} {principalToken?.symbol ?? ""}
+            </AmountLine>
+            <AssetName>{t("loan.principal")}</AssetName>
+          </CardTitleBox>
+
+          <StatusPill data-status={loan.status}>{loan.status}</StatusPill>
+        </CardTopRow>
+      </CardHeader>
+
+      <CardContent>
+        <MetaList>
+          <MetaRow>
+            <MetaLabel>{t("loan.status")}</MetaLabel>
+            <MetaValue>{loan.status}</MetaValue>
           </MetaRow>
 
           <MetaRow>
@@ -267,21 +328,7 @@ function LoanCard({ loan, assets }: { loan: Loan; assets: AssetMap }) {
           </MetaRow>
         </MetaList>
 
-        {loan.collaterals && loan.collaterals.length > 0 && (
-          <CollateralBox>
-            <CollateralTitle>{t("loan.collateral")}</CollateralTitle>
-            {loan.collaterals.map((c, idx) => {
-              const ca = assets[c.asset_id];
-              return (
-                <CollateralItem key={`${c.asset_id}-${idx}`}>
-                  {c.amount} {ca?.symbol ?? ""}
-                </CollateralItem>
-              );
-            })}
-          </CollateralBox>
-        )}
-
-        <Link href={`/loan/${loan.loan_id}`}>
+        <Link href={`/loan/${loan.id}`}>
           <Button variant="outline">
             {t("loan.viewDetails")}
             <ExternalLink className="ml-2 h-3 w-3" />
@@ -296,18 +343,40 @@ function LoanCard({ loan, assets }: { loan: Loan; assets: AssetMap }) {
 /* Stats helpers                       */
 /* ---------------------------------- */
 
-function calcStats(loans: Loan[], isBorrowing: boolean) {
-  const active = loans.filter((l) => l.status === "active").length;
+function calcIntentStats(intents: Intent[]) {
+  const active = intents.filter((i) => i.status === "ACTIVE").length;
+  const pending = intents.filter((i) => i.status === "UNAVAILABLE").length;
+  const completed = intents.filter((i) =>
+    ["EXECUTED", "CANCELLED", "EXPIRED"].includes(i.status),
+  ).length;
 
-  const pending = loans.filter((l) => l.status === "pending" || l.status === "matched").length;
+  const totalAmount = intents.reduce((sum, i) => sum + BigInt(i.principalAmount), 0n);
 
-  const completed = loans.filter((l) => l.status === "repaid" || l.status === "liquidated").length;
+  const token = intents[0]?.principalToken;
+  const decimals = token?.decimals ?? 0;
+  const symbol = token?.symbol ?? "";
+  const totalAmountDisplay =
+    decimals > 0 ? `${formatUnits(totalAmount, decimals)}${symbol ? ` ${symbol}` : ""}` : totalAmount.toString();
 
-  const totalAmount = loans
-    .filter((l) => l.status === "active")
-    .reduce((sum, l) => sum + (isBorrowing ? l.loan_amount : l.total_repay_amount), 0);
+  return { active, pending, completed, totalAmount, totalAmountDisplay };
+}
 
-  return { active, pending, completed, totalAmount };
+function calcLoanStats(loans: LoanIndex[]) {
+  const active = loans.filter((l) => l.status === "ONGOING").length;
+  const pending = 0;
+  const completed = loans.filter((l) => l.status !== "ONGOING").length;
+  const totalAmount = loans.reduce((sum, l) => {
+    const amount = l.intent?.principalAmount ? BigInt(l.intent.principalAmount) : 0n;
+    return sum + amount;
+  }, 0n);
+
+  const token = loans[0]?.intent?.principalToken;
+  const decimals = token?.decimals ?? 0;
+  const symbol = token?.symbol ?? "";
+  const totalAmountDisplay =
+    decimals > 0 ? `${formatUnits(totalAmount, decimals)}${symbol ? ` ${symbol}` : ""}` : totalAmount.toString();
+
+  return { active, pending, completed, totalAmount, totalAmountDisplay };
 }
 
 /* ---------------------------------- */

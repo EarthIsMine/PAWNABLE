@@ -299,7 +299,16 @@
       "totalRepayment": "총 상환 금액",
       "dueDate": "상환 기한",
       "collateral": "담보",
-      "viewDetails": "상세 보기"
+      "viewDetails": "상세 보기",
+      "principal": "원금",
+      "status": "상태"
+    },
+
+    "intent": {
+      "principal": "원금",
+      "interest": "이자율",
+      "collateral": "담보",
+      "deadline": "만기"
     }
   },
 

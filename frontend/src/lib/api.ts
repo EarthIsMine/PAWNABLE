@@ -60,6 +60,16 @@ export interface Intent {
   deadlineTimestamp: string;
   intentHash: string;
   signature: string;
+  borrower?: { address: string };
+  collateralToken?: { symbol: string; decimals: number; isNative?: boolean; address?: string };
+  principalToken?: { symbol: string; decimals: number; isNative?: boolean; address?: string };
+}
+
+export interface IntentListResponse {
+  intents: Intent[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 export type LoanStatus = "pending" | "matched" | "active" | "repaid" | "liquidated" | "cancelled";
@@ -91,6 +101,32 @@ export interface Loan {
   matched_at?: string | null;
   closed_at?: string | null;
   collaterals?: Collateral[];
+}
+
+export type LoanIndexStatus = "ONGOING" | "REPAID" | "CLAIMED";
+
+export interface LoanIndex {
+  id: string;
+  loanId: string;
+  status: LoanIndexStatus;
+  borrower: { address: string };
+  lender: { address: string };
+  intent?: {
+    collateralToken: { symbol: string; decimals: number };
+    principalToken: { symbol: string; decimals: number };
+    principalAmount?: string;
+    collateralAmount?: string;
+    interestBps?: number;
+  };
+  startTimestamp: string;
+  dueTimestamp: string;
+}
+
+export interface LoanListResponse {
+  loans: LoanIndex[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 /* ----------------------------- */
@@ -223,8 +259,21 @@ export const assetAPI = {
 
 // Loan APIs
 export const loanAPI = {
-  getAll() {
-    return fetchAPI<Loan[]>("/loans");
+  getAll(params?: {
+    status?: LoanIndexStatus;
+    borrower?: string;
+    lender?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    const search = new URLSearchParams();
+    if (params?.status) search.set("status", params.status);
+    if (params?.borrower) search.set("borrower", params.borrower);
+    if (params?.lender) search.set("lender", params.lender);
+    if (params?.limit != null) search.set("limit", String(params.limit));
+    if (params?.offset != null) search.set("offset", String(params.offset));
+    const query = search.toString();
+    return fetchAPI<LoanListResponse>(`/loans${query ? `?${query}` : ""}`);
   },
 
   getMarketplace() {
@@ -235,12 +284,12 @@ export const loanAPI = {
     return fetchAPI<Loan>(`/loans/${loanId}`);
   },
 
-  getByBorrower(borrowerId: string) {
-    return fetchAPI<Loan[]>(`/loans/borrower/${borrowerId}`);
+  getByBorrower(borrowerAddress: string) {
+    return loanAPI.getAll({ borrower: borrowerAddress });
   },
 
-  getByLender(lenderId: string) {
-    return fetchAPI<Loan[]>(`/loans/lender/${lenderId}`);
+  getByLender(lenderAddress: string) {
+    return loanAPI.getAll({ lender: lenderAddress });
   },
 
   create(data: {
@@ -305,6 +354,27 @@ export const tokenAPI = {
 
 // Intent APIs
 export const intentAPI = {
+  getById(id: string) {
+    return fetchAPI<Intent>(`/intents/${id}`);
+  },
+  getAll(params?: {
+    status?: Intent["status"];
+    borrower?: string;
+    collateralToken?: string;
+    principalToken?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    const search = new URLSearchParams();
+    if (params?.status) search.set("status", params.status);
+    if (params?.borrower) search.set("borrower", params.borrower);
+    if (params?.collateralToken) search.set("collateralToken", params.collateralToken);
+    if (params?.principalToken) search.set("principalToken", params.principalToken);
+    if (params?.limit != null) search.set("limit", String(params.limit));
+    if (params?.offset != null) search.set("offset", String(params.offset));
+    const query = search.toString();
+    return fetchAPI<IntentListResponse>(`/intents${query ? `?${query}` : ""}`);
+  },
   create(data: {
     chainId: number;
     verifyingContract: string;

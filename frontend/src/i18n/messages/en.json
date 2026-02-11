@@ -299,7 +299,16 @@
       "totalRepayment": "Total repayment",
       "dueDate": "Due date",
       "collateral": "Collateral",
-      "viewDetails": "View details"
+      "viewDetails": "View details",
+      "principal": "Principal",
+      "status": "Status"
+    },
+
+    "intent": {
+      "principal": "Principal",
+      "interest": "APR",
+      "collateral": "Collateral",
+      "deadline": "Deadline"
     }
   },
 
