@@ -85,6 +85,7 @@ export class ContractService {
       if (BigInt(allowance) < BigInt(args.collateralAmount)) {
         const approveTx = await tokenContract.approve(LOAN_CONTRACT_ADDRESS, args.collateralAmount)
         await approveTx.wait()
+        await new Promise((resolve) => setTimeout(resolve, 1000))
       }
     }
 
@@ -156,6 +157,7 @@ export class ContractService {
       if (BigInt(allowance) < BigInt(args.principalAmount)) {
         const approveTx = await tokenContract.approve(LOAN_CONTRACT_ADDRESS, args.principalAmount)
         await approveTx.wait()
+        await new Promise((resolve) => setTimeout(resolve, 1000))
       }
     }
 
@@ -204,6 +206,7 @@ export class ContractService {
       if (BigInt(allowance) < BigInt(args.repayAmount)) {
         const approveTx = await tokenContract.approve(LOAN_CONTRACT_ADDRESS, args.repayAmount)
         await approveTx.wait()
+        await new Promise((resolve) => setTimeout(resolve, 1000))
       }
     }
 
