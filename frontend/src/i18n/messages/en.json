@@ -164,7 +164,8 @@
       "summary": "Summary",
       "totalRepayment": "Total repayment",
       "dueDate": "Due date",
-      "createRequest": "Create request"
+      "createRequest": "Create request",
+      "creating": "Creating..."
     },
 
     "toast": {

@@ -164,7 +164,8 @@
       "summary": "요약",
       "totalRepayment": "총 상환액",
       "dueDate": "만기일",
-      "createRequest": "대출 요청 생성"
+      "createRequest": "대출 요청 생성",
+      "creating": "생성 중..."
     },
 
     "toast": {
