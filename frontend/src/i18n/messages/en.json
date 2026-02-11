@@ -384,6 +384,8 @@
     },
 
     "statusLabel": {
+      "OPEN": "Open",
+      "FUNDED": "Funded",
       "ONGOING": "Ongoing",
       "REPAID": "Repaid",
       "CLAIMED": "Claimed",

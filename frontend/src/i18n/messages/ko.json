@@ -384,6 +384,8 @@
     },
 
     "statusLabel": {
+      "OPEN": "대기 중",
+      "FUNDED": "자금 제공됨",
       "ONGOING": "진행 중",
       "REPAID": "상환됨",
       "CLAIMED": "청산됨",
