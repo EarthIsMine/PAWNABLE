@@ -38,6 +38,26 @@ function formatAmount(raw: string, decimals: number) {
   }
 }
 
+function toDateSafe(value: string | number | null | undefined) {
+  if (value == null) return null;
+  if (typeof value === "number") {
+    const ms = value > 1e12 ? value : value * 1000;
+    const date = new Date(ms);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    const asNumber = Number(value);
+    if (Number.isFinite(asNumber)) {
+      const ms = asNumber > 1e12 ? asNumber : asNumber * 1000;
+      const date = new Date(ms);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  return null;
+}
+
 export default function LoanDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -161,7 +181,9 @@ export default function LoanDetailPage() {
     Boolean(viewModel?.principalTokenAddress) &&
     isBorrower &&
     ((viewModel?.kind === "loan" && viewModel.status === "ONGOING") ||
-      (viewModel?.kind === "request" && viewModel.status === "FUNDED"));
+      (viewModel?.kind === "request" &&
+        viewModel.status === "FUNDED" &&
+        viewModel.loanStatus === "ONGOING"));
 
   const handleCancelRequest = async () => {
     if (!viewModel || viewModel.kind !== "request" || !detail || detail.kind !== "request") return;
@@ -304,6 +326,7 @@ export default function LoanDetailPage() {
   }
 
   const { principalToken, collateralToken, dueDate, isOverdue } = viewModel;
+  const createdAtDate = toDateSafe(viewModel.createdAt);
 
   const principalDecimals = principalToken?.decimals ?? 18;
   const principalAmount = formatAmount(viewModel.principalAmount, principalDecimals);
@@ -484,8 +507,8 @@ export default function LoanDetailPage() {
                 <Timeline>
                   <TimelineItem>
                     <div>{t("timeline.created")}</div>
-                    {viewModel.createdAt && (
-                      <SmallMuted>{format(new Date(viewModel.createdAt), "PPp")}</SmallMuted>
+                    {createdAtDate && (
+                      <SmallMuted>{format(createdAtDate, "PPp")}</SmallMuted>
                     )}
                   </TimelineItem>
 

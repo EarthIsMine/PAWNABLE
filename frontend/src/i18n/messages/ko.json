@@ -266,6 +266,7 @@
 
     "tabs": {
       "borrowed": "빌린 대출",
+      "completed": "완료된 대출",
       "lent": "빌려준 대출",
       "cancelled": "취소된 대출"
     },
@@ -342,6 +343,11 @@
         "title": "취소된 대출이 없어요",
         "description": "취소된 대출 요청이 여기 표시됩니다.",
         "button": "대출 요청 만들기"
+      },
+      "completed": {
+        "title": "완료된 대출이 없어요",
+        "description": "상환 또는 청산된 대출이 여기 표시됩니다.",
+        "button": "마켓플레이스 둘러보기"
       }
     },
 

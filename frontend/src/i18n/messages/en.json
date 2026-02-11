@@ -266,6 +266,7 @@
 
     "tabs": {
       "borrowed": "Borrowed",
+      "completed": "Completed",
       "lent": "Lent",
       "cancelled": "Cancelled"
     },
@@ -342,6 +343,11 @@
         "title": "No cancelled requests",
         "description": "Cancelled loan requests will appear here.",
         "button": "Create loan request"
+      },
+      "completed": {
+        "title": "No completed loans",
+        "description": "Repaid or liquidated loans will appear here.",
+        "button": "Browse marketplace"
       }
     },
 
