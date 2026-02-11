@@ -463,10 +463,7 @@ export default function CreateLoanPage() {
                   </CollateralRowWrap>
                 ))}
 
-                <Button type="button" variant="outline" onClick={addCollateral}>
-                  <Plus width={16} height={16} />
-                  {t("form.addCollateral")}
-                </Button>
+                {/* 담보는 단일 항목만 사용 */}
               </Stack>
             </CardContent>
           </Card>
