@@ -65,6 +65,7 @@ export function Navbar() {
 
           <NavLinks>
             <NavLink href="/marketplace">{t("marketplace")}</NavLink>
+            <NavLink href="/dashboard">{t("dashboard")}</NavLink>
           </NavLinks>
         </Left>
 
