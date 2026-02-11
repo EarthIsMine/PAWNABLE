@@ -175,6 +175,7 @@
       "createSuccess": "대출 요청이 성공적으로 생성되었습니다!",
       "createError": "대출 요청 생성 실패",
 
+      "loadError": "자산 목록을 불러오지 못했어요.",
       "loadAssetsError": "자산 목록을 불러오지 못했어요.",
       "connectWalletRequiredTitle": "지갑 연결이 필요해요",
       "connectWalletRequiredDescription": "계속하려면 지갑을 연결해 주세요.",

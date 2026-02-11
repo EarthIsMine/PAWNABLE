@@ -175,6 +175,7 @@
       "createSuccess": "Loan request created successfully!",
       "createError": "Failed to create loan request",
 
+      "loadError": "Failed to load asset list.",
       "loadAssetsError": "Failed to load asset list.",
       "connectWalletRequiredTitle": "Wallet required",
       "connectWalletRequiredDescription": "Please connect your wallet to continue.",
