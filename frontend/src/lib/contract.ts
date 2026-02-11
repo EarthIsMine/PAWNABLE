@@ -188,6 +188,17 @@ export class ContractService {
     }
 
     try {
+      // ERC20 토큰이 principal인 경우, 컨트랙트에 approve 필요
+      if (!args.principalIsNative) {
+        const signer = await this.provider!.getSigner()
+        const principalContract = new Contract(args.principalToken, TOKEN_ABI, signer)
+
+        console.log("Approving principal token for executeLoan...")
+        const approveTx = await principalContract.approve(LOAN_CONTRACT_ADDRESS, args.principalAmount)
+        await approveTx.wait()
+        console.log("Principal token approved")
+      }
+
       const baseArgs = [
         args.borrower,
         args.collateralToken,
