@@ -149,7 +149,7 @@ export default function LoanDetailPage() {
       loanStatus: request.loan?.status ?? null,
       loanDbId: request.loan?.id ?? null,
       onchainLoanId: request.loan?.onchainLoanId ?? null,
-      displayId: request.onchainRequestId ?? request.id,
+      displayId: request.loan?.onchainLoanId ?? request.onchainRequestId ?? request.id,
       principalToken,
       principalTokenAddress: request.principalTokenAddress ?? request.principalToken?.address ?? "",
       collateralToken,
