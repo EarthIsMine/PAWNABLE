@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { loanAPI } from "@/lib/api";
+import { intentAPI, loanAPI, type Intent } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 
@@ -47,11 +47,24 @@ type LoanDetail = {
   dueTimestamp: string;
 };
 
+type Detail =
+  | { kind: "loan"; data: LoanDetail }
+  | { kind: "intent"; data: Intent };
+
 function toBigInt(value: string | number | bigint | null | undefined) {
   if (typeof value === "bigint") return value;
   if (typeof value === "number") return BigInt(value);
   if (typeof value === "string" && value.length > 0) return BigInt(value);
   return 0n;
+}
+
+function toDateFromValue(value: string | null | undefined) {
+  if (!value) return null;
+  if (/^\d+$/.test(value)) {
+    return new Date(Number(value) * 1000);
+  }
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 function formatAmount(raw: string, decimals: number) {
@@ -71,7 +84,7 @@ export default function LoanDetailPage() {
   const t = useTranslations("loanDetail");
   const tc = useTranslations("common");
 
-  const [loan, setLoan] = useState<LoanDetail | null>(null);
+  const [detail, setDetail] = useState<Detail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const loanId = params?.id;
@@ -86,38 +99,72 @@ export default function LoanDetailPage() {
     try {
       setIsLoading(true);
 
-      const loanRes = (await loanAPI.getById(id)) as LoanDetail;
-      setLoan(loanRes);
+      try {
+        const loanRes = (await loanAPI.getById(id)) as LoanDetail;
+        setDetail({ kind: "loan", data: loanRes });
+        return;
+      } catch {
+        // fall through
+      }
+
+      const intentRes = (await intentAPI.getById(id)) as Intent;
+      setDetail({ kind: "intent", data: intentRes });
     } catch (err) {
       toast({
         title: tc("error"),
         description: t("toast.loadError"),
         variant: "destructive",
       });
-      setLoan(null);
+      setDetail(null);
     } finally {
       setIsLoading(false);
     }
   }
 
   const viewModel = useMemo(() => {
-    if (!loan) return null;
+    if (!detail) return null;
 
-    const intent = loan.intent ?? null;
-    const principalToken = intent?.principalToken ?? null;
-    const collateralToken = intent?.collateralToken ?? null;
-    const dueDate = new Date(Number(loan.dueTimestamp) * 1000);
+    if (detail.kind === "loan") {
+      const loan = detail.data;
+      const intent = loan.intent ?? null;
+      const principalToken = intent?.principalToken ?? null;
+      const collateralToken = intent?.collateralToken ?? null;
+      const dueDate = new Date(Number(loan.dueTimestamp) * 1000);
+      const isOverdue = dueDate.getTime() < Date.now();
+      return {
+        kind: "loan" as const,
+        status: loan.status,
+        displayId: loan.loanId ?? loan.id,
+        principalToken,
+        collateralToken,
+        intent,
+        dueDate,
+        isOverdue,
+        createdAt: loan.startTimestamp,
+        dueAt: loan.dueTimestamp,
+      };
+    }
+
+    const intent = detail.data;
+    const principalToken = intent.principalToken ?? null;
+    const collateralToken = intent.collateralToken ?? null;
+    const dueDate = new Date(Number(intent.deadlineTimestamp) * 1000);
     const isOverdue = dueDate.getTime() < Date.now();
     return {
+      kind: "intent" as const,
+      status: intent.status,
+      displayId: intent.id,
       principalToken,
       collateralToken,
       intent,
       dueDate,
       isOverdue,
+      createdAt: (intent as { createdAt?: string }).createdAt ?? null,
+      dueAt: intent.deadlineTimestamp,
     };
-  }, [loan]);
+  }, [detail]);
 
-  function statusLabel(status: LoanStatus) {
+  function statusLabel(status: string) {
     // ko.json에 이미 dashboard.status가 있으므로 재사용 (키 경로는 프로젝트 기준에 맞게 유지)
     // loanDetail쪽으로 옮기고 싶으면 키 재정리 가능
     // 여기서는 loanDetail.statusLabel.* 로 쓰는 편이 컴포넌트 응집도는 더 좋음
@@ -135,7 +182,7 @@ export default function LoanDetailPage() {
     );
   }
 
-  if (!loan || !viewModel) {
+  if (!detail || !viewModel) {
     return (
       <Shell>
         <Navbar />
@@ -183,11 +230,11 @@ export default function LoanDetailPage() {
             <div>
               <Title>{t("title")}</Title>
               <SubText>
-                {t("idLabel")}: <Mono>{loan.loanId ?? loan.id}</Mono>
+                {t("idLabel")}: <Mono>{viewModel.displayId}</Mono>
               </SubText>
             </div>
 
-            <Badge variant="secondary">{statusLabel(loan.status)}</Badge>
+            <Badge variant="secondary">{statusLabel(viewModel.status)}</Badge>
           </TopLine>
         </PageHeader>
 
@@ -319,14 +366,18 @@ export default function LoanDetailPage() {
                 <Timeline>
                   <TimelineItem>
                     <div>{t("timeline.created")}</div>
-                    <SmallMuted>
-                      {format(new Date(Number(loan.startTimestamp) * 1000), "PPp")}
-                    </SmallMuted>
+                    {(() => {
+                      const created = toDateFromValue(viewModel.createdAt);
+                      return created ? <SmallMuted>{format(created, "PPp")}</SmallMuted> : null;
+                    })()}
                   </TimelineItem>
 
                   <TimelineItem>
                     <div>{t("timeline.due")}</div>
-                    <SmallMuted>{format(new Date(Number(loan.dueTimestamp) * 1000), "PPp")}</SmallMuted>
+                    {(() => {
+                      const due = toDateFromValue(viewModel.dueAt);
+                      return due ? <SmallMuted>{format(due, "PPp")}</SmallMuted> : null;
+                    })()}
                   </TimelineItem>
                 </Timeline>
               </CardContent>
@@ -335,41 +386,6 @@ export default function LoanDetailPage() {
         </Grid>
       </Page>
 
-      {/* Confirm Dialog */}
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{confirmTitle()}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {actionType ? confirmDescription(actionType) : ""}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
-          <AlertDialogFooter>
-            {/* 우리 AlertDialog 컴포넌트가 text children을 못 받는 계약이면, 반드시 asChild로 Button 래핑 */}
-            <AlertDialogCancel asChild>
-              <Button variant="outline" disabled={isProcessing}>
-                {tc("cancel")}
-              </Button>
-            </AlertDialogCancel>
-
-            <AlertDialogAction asChild>
-              <Button onClick={handleAction} disabled={isProcessing}>
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t("confirm.processing")}
-                  </>
-                ) : actionType ? (
-                  confirmCta(actionType)
-                ) : (
-                  tc("confirm")
-                )}
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Shell>
   );
 }
