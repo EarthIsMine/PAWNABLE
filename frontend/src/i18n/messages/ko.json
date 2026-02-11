@@ -221,7 +221,8 @@
 
     "tabs": {
       "borrowed": "빌린 대출",
-      "lent": "빌려준 대출"
+      "lent": "빌려준 대출",
+      "cancelled": "취소된 대출"
     },
 
     "section": {
@@ -291,6 +292,11 @@
         "title": "빌려준 대출이 없어요",
         "description": "마켓플레이스를 둘러보고 대출을 시작해 보세요",
         "button": "마켓플레이스 둘러보기"
+      },
+      "cancelled": {
+        "title": "취소된 대출이 없어요",
+        "description": "취소된 대출 요청이 여기 표시됩니다.",
+        "button": "대출 요청 만들기"
       }
     },
 

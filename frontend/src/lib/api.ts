@@ -357,6 +357,12 @@ export const intentAPI = {
   getById(id: string) {
     return fetchAPI<Intent>(`/intents/${id}`);
   },
+  cancel(id: string, borrowerAddress: string, signature: string) {
+    return fetchAPI<Intent>(`/intents/${id}/cancel`, {
+      method: "POST",
+      body: JSON.stringify({ borrowerAddress, signature }),
+    });
+  },
   getAll(params?: {
     status?: Intent["status"];
     borrower?: string;

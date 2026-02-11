@@ -221,7 +221,8 @@
 
     "tabs": {
       "borrowed": "Borrowed",
-      "lent": "Lent"
+      "lent": "Lent",
+      "cancelled": "Cancelled"
     },
 
     "section": {
@@ -291,6 +292,11 @@
         "title": "No lent loans",
         "description": "Browse the marketplace to start lending",
         "button": "Browse marketplace"
+      },
+      "cancelled": {
+        "title": "No cancelled requests",
+        "description": "Cancelled loan requests will appear here.",
+        "button": "Create loan request"
       }
     },
 

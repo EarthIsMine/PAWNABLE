@@ -34,6 +34,7 @@ export default function DashboardPage() {
 
   const [borrowedIntents, setBorrowedIntents] = useState<Intent[]>([]);
   const [lentLoans, setLentLoans] = useState<LoanIndex[]>([]);
+  const [cancelledIntents, setCancelledIntents] = useState<Intent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -58,7 +59,11 @@ export default function DashboardPage() {
       const borrowed = (borrowedRes as IntentListResponse).intents ?? [];
       const lent = (lentRes as LoanListResponse).loans ?? [];
 
-      setBorrowedIntents(borrowed);
+      const cancelled = borrowed.filter((i) => i.status === "CANCELLED");
+      const activeBorrowed = borrowed.filter((i) => i.status !== "CANCELLED");
+
+      setBorrowedIntents(activeBorrowed);
+      setCancelledIntents(cancelled);
       setLentLoans(lent);
     } catch (err: unknown) {
       console.error("Failed to load dashboard:", err);
@@ -179,6 +184,9 @@ export default function DashboardPage() {
                 <TabsTrigger value="lent">
                   {t("tabs.lent")} ({lentLoans.length})
                 </TabsTrigger>
+                <TabsTrigger value="cancelled">
+                  {t("tabs.cancelled")} ({cancelledIntents.length})
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="borrowed">
@@ -212,6 +220,24 @@ export default function DashboardPage() {
                   <ListGrid>
                     {lentLoans.map((loan) => (
                       <LoanCard key={loan.id} loan={loan} />
+                    ))}
+                  </ListGrid>
+                )}
+              </TabsContent>
+
+              <TabsContent value="cancelled">
+                {cancelledIntents.length === 0 ? (
+                  <EmptyCard>
+                    <EmptyTitle>{t("empty.cancelled.title")}</EmptyTitle>
+                    <EmptyDesc>{t("empty.cancelled.description")}</EmptyDesc>
+                    <Link href="/create-loan">
+                      <Button>{t("empty.cancelled.button")}</Button>
+                    </Link>
+                  </EmptyCard>
+                ) : (
+                  <ListGrid>
+                    {cancelledIntents.map((intent) => (
+                      <IntentCard key={intent.id} intent={intent} />
                     ))}
                   </ListGrid>
                 )}

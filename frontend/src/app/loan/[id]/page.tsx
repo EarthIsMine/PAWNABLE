@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { intentAPI, loanAPI, type Intent } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import { walletService } from "@/lib/wallet";
 
 import { Loader2, ArrowLeft, Calendar, TrendingUp, Coins, Shield, AlertCircle } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
@@ -78,7 +79,7 @@ function formatAmount(raw: string, decimals: number) {
 export default function LoanDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { isConnected } = useAuth();
+  const { isConnected, user } = useAuth();
   const { toast } = useToast();
 
   const t = useTranslations("loanDetail");
@@ -163,6 +164,35 @@ export default function LoanDetailPage() {
       dueAt: intent.deadlineTimestamp,
     };
   }, [detail]);
+
+  const canCancelIntent =
+    viewModel?.kind === "intent" &&
+    viewModel.status === "ACTIVE" &&
+    Boolean(user?.wallet_address) &&
+    viewModel.intent?.borrowerAddress?.toLowerCase() === user?.wallet_address?.toLowerCase();
+
+  const handleCancelIntent = async () => {
+    if (!viewModel || viewModel.kind !== "intent" || !user?.wallet_address) return;
+
+    try {
+      const message = `Cancel intent: ${viewModel.displayId}`;
+      const signature = await walletService.signMessage(message);
+      await intentAPI.cancel(viewModel.displayId, user.wallet_address, signature);
+
+      toast({
+        title: tc("success"),
+        description: t("toast.cancelSuccess"),
+      });
+
+      await loadData(viewModel.displayId);
+    } catch (err: unknown) {
+      toast({
+        title: tc("error"),
+        description: err instanceof Error ? err.message : t("toast.genericError"),
+        variant: "destructive",
+      });
+    }
+  };
 
   function statusLabel(status: string) {
     // ko.json에 이미 dashboard.status가 있으므로 재사용 (키 경로는 프로젝트 기준에 맞게 유지)
@@ -343,6 +373,11 @@ export default function LoanDetailPage() {
 
               <CardContent>
                 <ActionStack>
+                  {canCancelIntent && (
+                    <Button variant="destructive" onClick={handleCancelIntent}>
+                      {t("action.cancel")}
+                    </Button>
+                  )}
                   <HintBox>
                     <AlertCircle className="h-5 w-5" />
                     <span>{t("hint.onchainOnly")}</span>
