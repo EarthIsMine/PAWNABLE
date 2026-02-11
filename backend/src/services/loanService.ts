@@ -1,4 +1,5 @@
 import prisma from '../config/database';
+import { Prisma } from '@prisma/client';
 import { LoanRequestStatus, LoanStatus } from '../types';
 import { IndexLoanFundedData } from '../types';
 
@@ -70,7 +71,7 @@ export const getLoanById = async (id: string) => {
 };
 
 export const createLoan = async (data: IndexLoanFundedData) => {
-  return await prisma.$transaction(async (tx) => {
+  return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Ensure users exist
     await Promise.all([
       tx.user.upsert({
