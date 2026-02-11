@@ -143,6 +143,11 @@ export default function CreateLoanPage() {
     return principal * (1 + rate / 100);
   }, [loanAmount, interestRate]);
 
+  const principalSymbol = useMemo(() => {
+    const token = tokens.find((t) => t.address === principalTokenAddress);
+    return token?.symbol ?? "";
+  }, [tokens, principalTokenAddress]);
+
   const addCollateral = () =>
     setCollaterals((prev) => [...prev, { token_address: "", amount: "" }]);
 
@@ -392,6 +397,7 @@ export default function CreateLoanPage() {
                   <SummaryLabel>{t("form.totalRepayment")}</SummaryLabel>
                   <SummaryValue>
                     {Number.isFinite(totalRepayment) ? totalRepayment.toFixed(2) : "-"}
+                    {principalSymbol ? ` ${principalSymbol}` : ""}
                   </SummaryValue>
                 </SummaryBox>
               )}
