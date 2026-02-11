@@ -25,22 +25,12 @@ async function seed() {
     update: {},
   });
 
-  // Add common Base tokens
+  // Add Base Sepolia tokens
   const tokens = [
     {
-      address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+      address: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
       symbol: 'USDC',
       decimals: 6,
-    },
-    {
-      address: '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb',
-      symbol: 'DAI',
-      decimals: 18,
-    },
-    {
-      address: '0x4200000000000000000000000000000000000006',
-      symbol: 'WETH',
-      decimals: 18,
     },
   ];
 

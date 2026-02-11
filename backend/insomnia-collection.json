@@ -83,7 +83,7 @@
       "created": 1707609600000,
       "name": "Get Token by Address (USDC)",
       "method": "GET",
-      "url": "http://localhost:8080/api/tokens/0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+      "url": "http://localhost:8080/api/tokens/0x036cbd53842c5426634e7929541ec2318f3dcf7e",
       "body": {},
       "parameters": [
         {
@@ -123,7 +123,7 @@
       "created": 1707609600000,
       "name": "Update Token Allowance (Admin)",
       "method": "PATCH",
-      "url": "http://localhost:8080/api/tokens/0x833589fcd6edb6e08f4c7c32d4f71b54bda02913/allowance",
+      "url": "http://localhost:8080/api/tokens/0x036cbd53842c5426634e7929541ec2318f3dcf7e/allowance",
       "body": {
         "mimeType": "application/json",
         "text": "{\n  \"chainId\": 8453,\n  \"isAllowed\": false\n}"
@@ -164,7 +164,7 @@
         },
         {
           "name": "principalToken",
-          "value": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          "value": "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
           "disabled": true
         },
         {
@@ -204,7 +204,7 @@
       "url": "http://localhost:8080/api/intents",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"chainId\": 8453,\n  \"verifyingContract\": \"0x0000000000000000000000000000000000000000\",\n  \"borrower\": \"0x0000000000000000000000000000000000000001\",\n  \"collateralToken\": \"0x4200000000000000000000000000000000000006\",\n  \"collateralAmount\": \"1000000000000000000\",\n  \"principalToken\": \"0x833589fcd6edb6e08f4c7c32d4f71b54bda02913\",\n  \"principalAmount\": \"1000000000\",\n  \"interestBps\": 500,\n  \"durationSeconds\": 604800,\n  \"nonce\": \"0\",\n  \"deadline\": \"1999999999\",\n  \"intentHash\": \"0x0000000000000000000000000000000000000000000000000000000000000001\",\n  \"signature\": \"0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\"\n}"
+        "text": "{\n  \"chainId\": 8453,\n  \"verifyingContract\": \"0x0000000000000000000000000000000000000000\",\n  \"borrower\": \"0x0000000000000000000000000000000000000001\",\n  \"collateralToken\": \"0x4200000000000000000000000000000000000006\",\n  \"collateralAmount\": \"1000000000000000000\",\n  \"principalToken\": \"0x036cbd53842c5426634e7929541ec2318f3dcf7e\",\n  \"principalAmount\": \"1000000000\",\n  \"interestBps\": 500,\n  \"durationSeconds\": 604800,\n  \"nonce\": \"0\",\n  \"deadline\": \"1999999999\",\n  \"intentHash\": \"0x0000000000000000000000000000000000000000000000000000000000000001\",\n  \"signature\": \"0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\"\n}"
       },
       "parameters": [],
       "headers": [

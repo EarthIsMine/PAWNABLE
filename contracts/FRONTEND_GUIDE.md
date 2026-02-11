@@ -16,9 +16,7 @@
 | Symbol | Address | Decimals |
 |--------|---------|----------|
 | ETH | `0x0000000000000000000000000000000000000000` | 18 |
-| USDC | `0x833589fcd6edb6e08f4c7c32d4f71b54bda02913` | 6 |
-| WETH | `0x4200000000000000000000000000000000000006` | 18 |
-| DAI | `0x50c5725949a6f0c72e6c4a641f24049a917db0cb` | 18 |
+| USDC | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` | 6 |
 
 ---
 
@@ -85,7 +83,7 @@ const message = {
   borrower: borrowerAddress,
   collateralToken: "0x4200000000000000000000000000000000000006", // WETH
   collateralAmount: ethers.parseEther("1"),                      // 1 WETH
-  principalToken: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",  // USDC
+  principalToken: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",  // USDC
   principalAmount: ethers.parseUnits("1000", 6),                 // 1000 USDC
   interestBps: 500,                                              // 5%
   durationSeconds: 604800,                                       // 7일
