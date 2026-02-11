@@ -20,6 +20,7 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const DISCONNECTED_KEY = "pawnable_disconnected";
 
 function getErrorMessage(error: unknown): string | undefined {
   if (error instanceof Error) return error.message;
@@ -47,6 +48,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = async () => {
     setIsLoading(true);
     try {
+      if (typeof window !== "undefined" && localStorage.getItem(DISCONNECTED_KEY) === "true") {
+        setUser(null);
+        setIsConnected(false);
+        return;
+      }
+
       const account = await walletService.getAccount();
       if (account) {
         setUser({ user_id: account, wallet_address: account });
@@ -66,9 +73,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const handleAccountsChanged = (accounts: string[]) => {
       const next = accounts?.[0];
       if (next) {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(DISCONNECTED_KEY);
+        }
         setUser({ user_id: next, wallet_address: next });
         setIsConnected(true);
       } else {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(DISCONNECTED_KEY, "true");
+        }
         setUser(null);
         setIsConnected(false);
       }
@@ -85,6 +98,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
 
     try {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(DISCONNECTED_KEY);
+      }
+
       // Wallet connect (address 확보)
       const walletAddress = await walletService.connect();
 
@@ -115,6 +132,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const disconnect = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(DISCONNECTED_KEY, "true");
+    }
+
     walletService.disconnect();
     setUser(null);
     setIsConnected(false);
