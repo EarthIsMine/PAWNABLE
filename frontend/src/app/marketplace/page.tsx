@@ -31,11 +31,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { intentAPI, type Intent } from "@/lib/api";
+import { intentAPI, loanAPI, type Intent } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { getLocale } from "@/lib/locale";
 import { contractService } from "@/lib/contract";
+import { walletService } from "@/lib/wallet";
 
 export default function MarketplacePage() {
   const [intents, setIntents] = useState<Intent[]>([]);
@@ -142,7 +143,29 @@ export default function MarketplacePage() {
         principalIsNative,
       });
 
-      await intentAPI.execute(intent.id, result.hash, result.loanId || "0");
+      const loanId = result.loanId || "0";
+      await intentAPI.execute(intent.id, result.hash, loanId);
+
+      if (loanId !== "0") {
+        const lenderAddress = (await walletService.getAccount()) || "";
+        const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID || 0);
+        const verifyingContract =
+          process.env.NEXT_PUBLIC_LOAN_CONTRACT_ADDRESS || process.env.NEXT_PUBLIC_LOAN_CONTRACT || "";
+
+        if (chainId && verifyingContract && lenderAddress) {
+          await loanAPI.createIndex({
+            chainId,
+            verifyingContract,
+            loanId,
+            intentId: intent.id,
+            borrower: intent.borrowerAddress,
+            lender: lenderAddress,
+            startTimestamp: String(Math.floor(Date.now() / 1000)),
+            dueTimestamp: intent.deadlineTimestamp,
+            startTxHash: result.hash,
+          });
+        }
+      }
 
       toast({
         title: t("toast.executeSuccess"),

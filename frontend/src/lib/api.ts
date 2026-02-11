@@ -307,6 +307,23 @@ export const loanAPI = {
     });
   },
 
+  createIndex(data: {
+    chainId: number;
+    verifyingContract: string;
+    loanId: string;
+    intentId?: string;
+    borrower: string;
+    lender: string;
+    startTimestamp: string;
+    dueTimestamp: string;
+    startTxHash: string;
+  }) {
+    return fetchAPI<LoanIndex>("/loans", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
   match(loanId: string, lenderId: string) {
     return fetchAPI<Loan>(`/loans/${loanId}/match`, {
       method: "POST",

@@ -105,19 +105,22 @@ export const createLoan = async (data: CreateLoanData) => {
         throw new Error(`Intent ${data.intentId} not found`);
       }
 
-      if (intent.status !== IntentStatus.ACTIVE) {
+      if (![IntentStatus.ACTIVE, IntentStatus.EXECUTED].includes(intent.status as IntentStatus)) {
         throw new Error(`Intent is not active (current: ${intent.status})`);
       }
 
       // Intent를 EXECUTED로 업데이트
-      await tx.intent.update({
-        where: { id: data.intentId },
-        data: {
-          status: IntentStatus.EXECUTED,
-          executedTxHash: data.startTxHash,
-          executedLoanId: data.loanId,
-        },
-      });
+      // 이미 EXECUTED인 경우에는 업데이트를 생략 (중복 실행 방지)
+      if (intent.status === IntentStatus.ACTIVE) {
+        await tx.intent.update({
+          where: { id: data.intentId },
+          data: {
+            status: IntentStatus.EXECUTED,
+            executedTxHash: data.startTxHash,
+            executedLoanId: data.loanId,
+          },
+        });
+      }
     }
 
     // Create loan
