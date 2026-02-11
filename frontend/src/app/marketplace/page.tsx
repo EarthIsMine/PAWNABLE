@@ -142,9 +142,7 @@ export default function MarketplacePage() {
         principalIsNative,
       });
 
-      if (result.loanId) {
-        await intentAPI.execute(intent.id, result.hash, result.loanId);
-      }
+      await intentAPI.execute(intent.id, result.hash, result.loanId || "0");
 
       toast({
         title: t("toast.executeSuccess"),

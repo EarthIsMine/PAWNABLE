@@ -19,10 +19,9 @@ const LOAN_ABI = [
   "function depositEth() external payable",
   "function ethDeposits(address) external view returns (uint256)",
   "function getLoan(string loanId) external view returns (tuple(string loanId, address borrower, address lender, address loanToken, uint256 loanAmount, uint256 repayAmount, uint8 collateralType, address collateralToken, uint256 collateralAmount, uint256 dueTimestamp, uint8 status, uint256 createdAt, uint256 matchedAt, uint256 closedAt))",
-  "event LoanRequested(string indexed loanId, address indexed borrower, address loanToken, uint256 loanAmount, uint256 repayAmount, uint8 collateralType, address collateralToken, uint256 collateralAmount, uint256 dueTimestamp)",
-  "event LoanMatched(string indexed loanId, address indexed borrower, address indexed lender, uint256 loanAmount)",
-  "event LoanRepaid(string indexed loanId, address indexed borrower, uint256 repayAmount)",
-  "event LoanLiquidated(string indexed loanId, address indexed lender, uint256 collateralAmount)",
+  "event LoanExecuted(uint256 indexed loanId, address indexed borrower, address indexed lender, address collateralToken, uint256 collateralAmount, address principalToken, uint256 principalAmount, uint256 interestBps, uint256 startTimestamp, uint256 dueTimestamp)",
+  "event LoanRepaid(uint256 indexed loanId, address indexed borrower, uint256 repayAmount)",
+  "event CollateralClaimed(uint256 indexed loanId, address indexed lender, uint256 collateralAmount)",
 ]
 
 const TOKEN_ABI = [
