@@ -25,6 +25,7 @@ export function getLocaleLabel(locale: Locale): string {
   const labels: Record<Locale, string> = {
     ko: "한국어",
     en: "English",
+    "zh-HK": "廣東話(香港)",
   }
   return labels[locale]
 }

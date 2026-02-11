@@ -1,0 +1,553 @@
+{
+  "common": {
+    "connect": "連接錢包",
+    "connected": "已連接",
+    "disconnect": "斷開連接",
+    "loading": "載入中...",
+    "error": "錯誤",
+    "success": "成功",
+    "cancel": "取消",
+    "confirm": "確認",
+    "close": "關閉",
+    "save": "儲存",
+    "edit": "編輯",
+    "delete": "刪除",
+    "view": "查看",
+    "ok": "確定",
+    "back": "返回",
+    "retry": "再試",
+    "notAvailable": "暫不可用"
+  },
+
+  "navbar": {
+    "marketplace": "市場",
+    "connectWallet": "連接錢包",
+    "dashboard": "儀表板",
+    "createLoan": "建立貸款",
+    "changeLanguage": "變更語言",
+    "menu": "選單",
+    "accountMenu": "帳戶選單",
+    "goToDashboard": "前往儀表板",
+    "disconnect": "斷開連接"
+  },
+
+  "locale": {
+    "changeLanguage": "變更語言",
+    "current": "目前語言",
+    "ko": "韓文",
+    "en": "英文",
+    "zh-HK": "廣東話(香港)"
+  },
+
+  "home": {
+    "badge": "P2P 加密借貸",
+    "title": "無中介的金融",
+    "subtitle": "親身體驗 DeFi。自己設定利率，用加密資產作抵押，進行 P2P 借貸。",
+    "exploreMarketplace": "探索市場",
+    "createLoanRequest": "建立貸款請求",
+    "toast": {
+      "connectWalletTitle": "需要連接錢包",
+      "connectWalletDesc": "建立貸款請求前請先連接錢包。"
+    },
+    "stats": {
+      "platformFee": "平台費用",
+      "directMatching": "直接配對",
+      "flexible": "靈活",
+      "yourRates": "自訂利率",
+      "secure": "安全",
+      "smartContracts": "智能合約"
+    },
+    "howItWorks": {
+      "title": "PAWNABLE 運作方式",
+      "subtitle": "透明且可控的加密抵押貸款新方式",
+      "features": {
+        "setTerms": {
+          "title": "自訂條款",
+          "description": "借款人自行提出利率與條款，無演算法定價。"
+        },
+        "collateral": {
+          "title": "加密抵押",
+          "description": "目前支援 ETH 與 ERC-20 代幣作抵押，資產由智能合約安全保管。"
+        },
+        "deadlines": {
+          "title": "固定期限",
+          "description": "清晰還款期限，只採用時間條款，無價格觸發清算。"
+        },
+        "matching": {
+          "title": "直接資金提供",
+          "description": "在市場找到貸款請求並直接提供資金。"
+        }
+      }
+    },
+    "cta": {
+      "title": "準備開始了嗎？",
+      "subtitle": "連接錢包並探索市場，立即開始借或貸。",
+      "viewMarketplace": "查看市場"
+    },
+    "footer": {
+      "testnet": "2026 PAWNABLE。僅限測試網",
+      "docs": "文件",
+      "github": "GitHub",
+      "discord": "Discord"
+    }
+  },
+
+  "marketplace": {
+    "title": "貸款市場",
+    "subtitle": "瀏覽可用貸款請求，提供資金賺取利息",
+
+    "searchPlaceholder": "搜尋",
+    "filters": "篩選",
+    "sort": "排序",
+    "count": "{count} 項",
+
+    "sortOptions": {
+      "newest": "最新",
+      "aprHigh": "最高利率",
+      "aprLow": "最低利率",
+      "dueSoon": "即將到期"
+    },
+    "filterLabels": {
+      "asset": "資產",
+      "status": "狀態",
+      "duration": "期限",
+      "apr": "年化利率"
+    },
+
+    "noLoans": {
+      "title": "暫無可用貸款",
+      "description": "成為第一個建立貸款請求的人",
+      "button": "建立貸款請求"
+    },
+
+    "card": {
+      "interest": "年化利率",
+      "totalRepayment": "總還款",
+      "due": "到期",
+      "collateral": "抵押品",
+      "lendNow": "立即放款",
+      "connectToLend": "連接錢包以放款",
+
+      "borrowerSetsRate": "借款人設定條款",
+      "ctaConnectWallet": "連接錢包",
+
+      "apr": "年化利率",
+      "totalRepay": "總還款",
+      "walletRequired": "放款前請連接錢包"
+    },
+
+    "toast": {
+      "connectWallet": "連接錢包",
+      "pleaseConnect": "放款前請先連接錢包",
+      "matchSuccess": "配對成功。請進行貸款啟用。",
+      "matchError": "配對失敗",
+      "loadError": "市場資料載入失敗",
+      "executeSuccess": "貸款已執行",
+      "executeSuccessDesc": "鏈上執行已完成。",
+      "executeError": "執行失敗",
+      "executeErrorDesc": "未能執行該貸款。",
+      "insufficientFundsTitle": "ETH 不足以支付手續費",
+      "insufficientFundsDesc": "請先補充少量 ETH 以支付 gas 後再試。",
+      "approving": "核准中...",
+      "approvingDesc": "正在核准代幣使用。",
+      "txRejected": "交易已取消",
+      "txRejectedDesc": "你已取消交易。"
+    },
+
+    "modal": {
+      "title": "以放款人身份繼續？",
+      "description": "你將提供本金並在鏈上執行貸款。",
+      "summary": {
+        "principal": "你將放款",
+        "apr": "年化利率",
+        "total": "你將收到",
+        "due": "到期",
+        "collateral": "已鎖定抵押"
+      },
+      "steps": {
+        "review": {
+          "title": "確認",
+          "desc": "確認你將提供的本金與抵押條件。"
+        },
+        "sign": {
+          "title": "提供資金",
+          "desc": "核准從你的錢包轉出本金。"
+        },
+        "execute": {
+          "title": "執行",
+          "desc": "提交鏈上交易以啟用貸款。"
+        }
+      },
+      "cancel": "取消",
+      "proceed": "立即執行",
+      "executing": "執行中..."
+    }
+  },
+
+  "createLoan": {
+    "title": "建立貸款請求",
+    "subtitle": "設定條款並添加抵押品來建立新的貸款請求",
+
+    "form": {
+      "loanDetails": "貸款詳情",
+      "asset": "貸款資產",
+      "selectAsset": "選擇資產",
+      "amount": "金額",
+      "enterAmount": "輸入金額",
+      "interestRate": "利率 (%)",
+      "duration": "期限 (天)",
+      "collateralInfo": "抵押品",
+      "collateralAsset": "抵押資產",
+      "collateralAmount": "抵押金額",
+      "addCollateral": "新增抵押品",
+      "removeCollateral": "移除",
+      "summary": "摘要",
+      "totalRepayment": "總還款",
+      "dueDate": "到期日",
+      "createRequest": "建立請求",
+      "creating": "建立中..."
+    },
+
+    "toast": {
+      "connectWallet": "連接錢包",
+      "pleaseConnect": "建立貸款請求前請連接錢包",
+      "fillRequired": "請填寫所有必填欄位",
+      "addCollateral": "請至少新增一項抵押品",
+      "createSuccess": "貸款請求建立成功！",
+      "createError": "貸款請求建立失敗",
+
+      "loadError": "載入資產列表失敗。",
+      "loadAssetsError": "載入資產列表失敗。",
+      "connectWalletRequiredTitle": "需要連接錢包",
+      "connectWalletRequiredDescription": "請先連接錢包再繼續。",
+      "created": "貸款請求已建立。",
+      "createFailed": "貸款請求建立失敗。",
+      "submitting": "建立中…",
+      "creating": "建立中...",
+      "depositingEth": "正在存入 ETH...",
+      "depositingEthDesc": "正將 ETH 抵押存入合約。",
+      "insufficientFundsTitle": "ETH 不足以支付手續費",
+      "insufficientFundsDesc": "請先補充少量 ETH 以支付 gas 後再試。",
+      "txRejected": "交易已取消",
+      "txRejectedDesc": "你已取消交易。"
+    },
+
+    "card": {
+      "loanDetailsTitle": "貸款資訊",
+      "loanDetailsDesc": "輸入想借的金額與條款",
+      "collateralTitle": "抵押品",
+      "collateralDesc": "新增此貸款的抵押資產"
+    },
+
+    "summary": {
+      "totalRepaymentLabel": "總還款"
+    },
+
+    "actions": {
+      "addCollateral": "新增抵押品",
+      "cancel": "取消",
+      "submit": "建立貸款請求",
+      "submitting": "建立中…"
+    }
+  },
+
+  "dashboard": {
+    "title": "我的貸款",
+
+    "welcome": "你好，{name}",
+    "unknownAsset": "未知資產",
+
+    "cta": {
+      "newLoan": "新貸款請求"
+    },
+
+    "toast": {
+      "loadError": "儀表板資料載入失敗。"
+    },
+
+    "tabs": {
+      "borrowed": "借入貸款",
+      "completed": "已完成貸款",
+      "lent": "借出貸款",
+      "cancelled": "已取消貸款"
+    },
+
+    "section": {
+      "loans": "貸款概覽"
+    },
+
+    "kpi": {
+      "borrowedActive": {
+        "title": "進行中的貸款（借入）"
+      },
+      "lentActive": {
+        "title": "進行中的貸款（借出）"
+      },
+      "pending": "{count} 個待處理",
+
+      "totalBorrowed": {
+        "title": "總借入",
+        "hint": "以 USDT 等值計"
+      },
+      "totalLent": {
+        "title": "總借出",
+        "hint": "以 USDT 等值計"
+      }
+    },
+
+    "noLoans": {
+      "borrowed": {
+        "title": "沒有借入貸款",
+        "description": "建立貸款請求開始使用",
+        "button": "建立貸款請求"
+      },
+      "lent": {
+        "title": "沒有借出貸款",
+        "description": "到市場瀏覽貸款請求",
+        "button": "瀏覽市場"
+      }
+    },
+
+    "status": {
+      "created": "已建立",
+      "matched": "已配對",
+      "active": "進行中",
+      "repaid": "已還款",
+      "liquidated": "已清算",
+      "pending": "待處理",
+      "cancelled": "已取消"
+    },
+
+    "card": {
+      "interest": "年化利率",
+      "repayment": "還款",
+      "due": "到期",
+      "collateral": "抵押品",
+      "viewDetails": "查看詳情",
+      "totalRepayment": "總還款",
+      "dueDate": "到期日",
+      "viewDetails2": "查看詳情"
+    },
+
+    "empty": {
+      "borrowed": {
+        "title": "沒有借入貸款",
+        "description": "建立貸款請求開始使用",
+        "button": "建立貸款請求"
+      },
+      "lent": {
+        "title": "沒有借出貸款",
+        "description": "到市場瀏覽貸款請求開始放款",
+        "button": "瀏覽市場"
+      },
+      "cancelled": {
+        "title": "沒有已取消貸款",
+        "description": "已取消的貸款請求會顯示在這裡。",
+        "button": "建立貸款請求"
+      },
+      "completed": {
+        "title": "沒有已完成貸款",
+        "description": "已還款或已清算的貸款會顯示在這裡。",
+        "button": "瀏覽市場"
+      }
+    },
+
+    "loan": {
+      "interest": "年化利率",
+      "totalRepayment": "總還款",
+      "dueDate": "到期日",
+      "collateral": "抵押品",
+      "viewDetails": "查看詳情",
+      "principal": "本金",
+      "status": "狀態"
+    },
+
+    "intent": {
+      "principal": "本金",
+      "interest": "年化利率",
+      "collateral": "抵押品",
+      "deadline": "到期"
+    }
+  },
+
+  "loanDetail": {
+    "title": "貸款詳情",
+    "idLabel": "ID",
+
+    "loading": "正在載入貸款詳情...",
+    "notFound": "找不到貸款",
+
+    "unknownAsset": "未知資產",
+    "emptyCollateral": "沒有抵押品資訊。",
+
+    "section": {
+      "overview": "概覽",
+      "collateral": "抵押品",
+      "actions": "操作",
+      "timeline": "時間軸"
+    },
+
+    "field": {
+      "loanAmount": "貸款金額",
+      "interestRate": "利率",
+      "totalRepayment": "總還款",
+      "dueDate": "到期日"
+    },
+
+    "statusLabel": {
+      "OPEN": "開放",
+      "FUNDED": "已放款",
+      "ONGOING": "進行中",
+      "REPAID": "已還款",
+      "CLAIMED": "已清算",
+      "ACTIVE": "啟用",
+      "UNAVAILABLE": "不可用",
+      "EXPIRED": "已到期",
+      "CANCELLED": "已取消",
+      "EXECUTED": "已執行",
+      "pending": "已建立",
+      "matched": "已配對",
+      "active": "啟用",
+      "repaid": "已還款",
+      "liquidated": "已清算",
+      "cancelled": "已取消",
+      "created": "已建立"
+    },
+
+    "timeline": {
+      "created": "已建立",
+      "matched": "已配對",
+      "closed": "已結束",
+      "due": "到期"
+    },
+
+    "action": {
+      "activate": "啟用貸款",
+      "repay": "償還貸款",
+      "liquidate": "清算抵押品",
+      "cancel": "取消貸款",
+      "repaying": "償還中..."
+    },
+
+    "hint": {
+      "connectWallet": "請連接錢包以進行操作。",
+      "onchainOnly": "操作會在鏈上執行，請使用錢包完成交易。"
+    },
+
+    "confirm": {
+      "title": "要繼續嗎？",
+      "processing": "處理中...",
+      "cta": {
+        "cancel": "取消貸款",
+        "activate": "啟用",
+        "repay": "償還",
+        "liquidate": "清算"
+      },
+      "description": {
+        "cancel": "此操作將取消貸款請求，且無法撤銷。",
+        "activate": "此操作將啟用貸款並把資金轉給借款人。",
+        "repay": "此操作將償還貸款並退回抵押品。",
+        "liquidate": "此操作將清算逾期貸款的抵押品。"
+      }
+    },
+
+    "toast": {
+      "loadError": "載入貸款詳情失敗。",
+      "genericError": "處理請求時發生錯誤。",
+
+      "cancelSuccess": "貸款已取消。",
+
+      "txPendingTitle": "區塊鏈交易進行中",
+      "txPendingDesc": "請在 MetaMask 確認交易。",
+
+      "activateSuccess": "貸款已啟用。(TX: {hash})",
+      "repaySuccess": "貸款已償還。(TX: {hash})",
+      "liquidateSuccess": "貸款已清算。(TX: {hash})",
+
+      "activateError": "啟用貸款失敗",
+      "repayError": "償還貸款失敗",
+      "liquidateError": "清算抵押品失敗",
+      "insufficientFundsTitle": "ETH 不足以支付手續費",
+      "insufficientFundsDesc": "請先補充少量 ETH 以支付 gas 後再試。"
+    },
+
+    "overview": "概覽",
+    "loanAmount": "貸款金額",
+    "interestRate": "利率",
+    "totalRepayment": "總還款",
+    "dueDate": "到期日",
+    "status": "狀態",
+    "timelineLegacy": "時間軸",
+    "created": "已建立",
+    "matched": "已配對",
+    "activated": "已啟用",
+    "repaid": "已償還",
+    "collateral": "抵押品資訊",
+
+    "actions": {
+      "title": "操作",
+      "activate": "啟用貸款",
+      "repay": "償還貸款",
+      "liquidate": "清算抵押品",
+      "activateDesc": "啟用貸款並轉移資金",
+      "repayDesc": "償還貸款並取回抵押品",
+      "liquidateDesc": "清算已到期貸款的抵押品",
+
+      "cancelLoan": "取消貸款",
+      "match": "配對",
+      "cancelLoanDesc": "取消貸款"
+    },
+
+    "dialog": {
+      "title": "確定要進行嗎？",
+      "description": "此操作可能無法撤銷。",
+      "confirm": "確認",
+      "cancel": "取消"
+    }
+  },
+
+  "wallet": {
+    "connect": "連接錢包",
+    "connecting": "連接中...",
+    "connected": "已連接",
+    "disconnect": "斷開連接",
+    "noMetaMask": "未安裝 MetaMask",
+    "installMetaMask": "安裝 MetaMask",
+    "error": "錢包連接錯誤",
+    "authError": "認證失敗",
+    "accountMenu": "帳戶選單",
+    "copyAddress": "複製錢包地址",
+    "copied": "地址已複製",
+    "copyError": "複製地址失敗",
+    "connectedDesc": "錢包已連接",
+    "disconnectDesc": "已斷開錢包連接",
+
+    "connectedTitle": "錢包已連接",
+    "connectedDescription": "錢包連接完成。",
+    "disconnectedTitle": "已斷開連接",
+    "disconnectedDescription": "錢包連接已斷開。",
+    "errorTitle": "錢包連接失敗",
+    "unknownError": "發生未知錯誤。"
+  },
+
+  "toast": {
+    "connectWalletRequiredTitle": "需要連接錢包",
+    "connectWalletRequiredDescription": "請先連接錢包再繼續。",
+    "loadFailedTitle": "載入失敗",
+    "loadFailedDescription": "載入資料失敗，請稍後再試。",
+    "actionFailedTitle": "請求失敗",
+    "actionFailedDescription": "請稍後再試。",
+
+    "copiedTitle": "已複製",
+    "copiedDescription": "內容已複製到剪貼簿。",
+
+    "tokenAddedTitle": "代幣已新增",
+    "tokenAddedDescription": "已新增到你的錢包。",
+
+    "errorTitle": "錯誤",
+    "errorDescription": "操作失敗。",
+
+    "successTitle": "成功",
+    "successDescription": "操作完成。"
+  }
+}
