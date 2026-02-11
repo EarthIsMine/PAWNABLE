@@ -18,7 +18,7 @@ export const getTokens = async (req: Request, res: Response) => {
 export const getTokenByAddress = async (req: Request, res: Response) => {
   try {
     const { address } = req.params;
-    const { chainId = '8453' } = req.query;
+    const { chainId = '84532' } = req.query;
 
     const token = await tokenService.getTokenByAddress(
       parseInt(chainId as string, 10),

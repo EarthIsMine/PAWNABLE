@@ -11,7 +11,7 @@ export const env = {
   DATABASE_URL: process.env.DATABASE_URL!,
 
   // Blockchain
-  BASE_CHAIN_ID: parseInt(process.env.BASE_CHAIN_ID || '8453', 10),
+  BASE_CHAIN_ID: parseInt(process.env.BASE_CHAIN_ID || '84532', 10),
   BASE_RPC_URL: process.env.BASE_RPC_URL!,
   LOAN_CONTRACT_ADDRESS: process.env.LOAN_CONTRACT_ADDRESS || '',
 

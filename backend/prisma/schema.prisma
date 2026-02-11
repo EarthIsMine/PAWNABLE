@@ -1,5 +1,5 @@
 // Prisma Schema for PAWNABLE
-// Base Chain Only (chain_id = 8453)
+// Base Sepolia Testnet (chain_id = 84532)
 
 generator client {
   provider = "prisma-client-js"

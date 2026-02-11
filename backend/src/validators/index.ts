@@ -86,6 +86,6 @@ export const addTokenSchema = z.object({
 });
 
 export const updateTokenAllowanceSchema = z.object({
-  chainId: z.coerce.number().int().positive().default(8453),
+  chainId: z.coerce.number().int().positive().default(84532),
   isAllowed: z.boolean(),
 });
