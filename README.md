@@ -9,7 +9,9 @@
 
 ### 📺 Demo Video
 
-Watch the full demo: **[PAWNABLE Demo on YouTube](https://youtu.be/aqtpRVNjXto)**
+[![PAWNABLE Demo](https://img.youtube.com/vi/aqtpRVNjXto/maxresdefault.jpg)](https://youtu.be/aqtpRVNjXto)
+
+**👆 Click to watch the full demo on YouTube**
 
 ---
 
