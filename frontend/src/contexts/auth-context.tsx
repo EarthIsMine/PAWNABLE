@@ -40,8 +40,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // 초기 자동 연결 없음
-    setIsLoading(false);
+    const init = async () => {
+      try {
+        const account = await walletService.getAccount();
+        if (account) {
+          setUser({ user_id: account, wallet_address: account });
+          setIsConnected(true);
+          try {
+            await contractService.initialize();
+          } catch (error) {
+            console.warn("Contract initialization failed:", error);
+          }
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void init();
   }, []);
 
   useEffect(() => {
