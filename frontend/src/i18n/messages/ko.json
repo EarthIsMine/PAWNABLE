@@ -126,6 +126,7 @@
       "collateral": "담보",
       "lendNow": "지금 빌려주기",
       "connectToLend": "빌려주려면 지갑 연결",
+      "ownRequestDisabled": "내 요청",
 
       "borrowerSetsRate": "차입자가 조건을 제시합니다",
       "ctaConnectWallet": "지갑 연결",

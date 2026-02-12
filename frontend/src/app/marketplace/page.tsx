@@ -42,7 +42,7 @@ export default function MarketplacePage() {
   const [isExecuting, setIsExecuting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const { isConnected } = useAuth();
+  const { isConnected, user } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -319,9 +319,21 @@ export default function MarketplacePage() {
                         size="lg"
                         tone="accent"
                         fullWidth
+                        disabled={
+                          !isConnected ||
+                          (request.borrowerAddress &&
+                            user?.wallet_address &&
+                            request.borrowerAddress.toLowerCase() === user.wallet_address.toLowerCase())
+                        }
                         onClick={() => openLendModal(request)}
                       >
-                        {isConnected ? t("card.lendNow") : t("card.walletRequired")}
+                        {!isConnected
+                          ? t("card.walletRequired")
+                          : request.borrowerAddress &&
+                              user?.wallet_address &&
+                              request.borrowerAddress.toLowerCase() === user.wallet_address.toLowerCase()
+                            ? t("card.ownRequestDisabled")
+                            : t("card.lendNow")}
                       </Button>
                     </CardFooter>
                   </LoanCard>

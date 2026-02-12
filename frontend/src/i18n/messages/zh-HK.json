@@ -127,6 +127,7 @@
       "collateral": "抵押品",
       "lendNow": "立即放款",
       "connectToLend": "連接錢包以放款",
+      "ownRequestDisabled": "我的請求",
 
       "borrowerSetsRate": "借款人設定條款",
       "ctaConnectWallet": "連接錢包",

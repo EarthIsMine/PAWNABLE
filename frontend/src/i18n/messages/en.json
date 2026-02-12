@@ -126,6 +126,7 @@
       "collateral": "Collateral",
       "lendNow": "Lend now",
       "connectToLend": "Connect wallet to lend",
+      "ownRequestDisabled": "Your request",
 
       "borrowerSetsRate": "Borrowers set the terms",
       "ctaConnectWallet": "Connect wallet",
