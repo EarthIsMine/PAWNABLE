@@ -48,6 +48,13 @@ export default function MarketplacePage() {
 
   const t = useTranslations("marketplace");
 
+  const isOwnRequest = (request: LoanRequest) =>
+    Boolean(
+      request.borrowerAddress &&
+        user?.wallet_address &&
+        request.borrowerAddress.toLowerCase() === user.wallet_address.toLowerCase(),
+    );
+
   useEffect(() => {
     void loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -670,9 +677,3 @@ const StepDesc = styled.div`
   font-size: 12px;
   color: var(--muted-foreground);
 `;
-  const isOwnRequest = (request: LoanRequest) =>
-    Boolean(
-      request.borrowerAddress &&
-        user?.wallet_address &&
-        request.borrowerAddress.toLowerCase() === user.wallet_address.toLowerCase(),
-    );
