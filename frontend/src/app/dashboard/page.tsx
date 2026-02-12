@@ -40,6 +40,11 @@ export default function DashboardPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!isConnected || !user) {
+      toast({
+        title: c("error"),
+        description: t("toast.authRequired", { defaultMessage: "지갑 연결이 필요해요." }),
+        variant: "destructive",
+      });
       router.push("/");
       return;
     }

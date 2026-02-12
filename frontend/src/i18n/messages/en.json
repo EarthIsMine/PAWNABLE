@@ -261,7 +261,8 @@
     },
 
     "toast": {
-      "loadError": "Failed to load dashboard data."
+      "loadError": "Failed to load dashboard data.",
+      "authRequired": "Please connect your wallet to access the dashboard."
     },
 
     "tabs": {

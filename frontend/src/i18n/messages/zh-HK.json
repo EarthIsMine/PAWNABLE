@@ -262,7 +262,8 @@
     },
 
     "toast": {
-      "loadError": "儀表板資料載入失敗。"
+      "loadError": "儀表板資料載入失敗。",
+      "authRequired": "請先連接錢包以進入儀表板。"
     },
 
     "tabs": {
