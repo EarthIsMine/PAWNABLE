@@ -19,6 +19,12 @@
 
 PAWNABLE is a decentralized P2P lending platform built on Base blockchain. Borrowers create on-chain loan requests with locked collateral, and lenders fund them directly. No price oracle, no LTV liquidation — only **time-based liquidation**.
 
+## Built for RobinPump.fun
+
+Pawnable enhances capital efficiency for tokens launched on RobinPump.fun.
+Instead of forcing holders to sell volatile bonding-curve tokens,
+Pawnable enables time-based collateralized borrowing, reducing sell pressure and increasing ecosystem liquidity.
+
 ### Key Differentiators
 
 | Feature | Traditional DeFi (AAVE) | PAWNABLE |
