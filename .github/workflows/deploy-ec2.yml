@@ -57,6 +57,7 @@ jobs:
             pnpm -r build
             pnpm --filter pawnable-backend prisma:generate
             pnpm --filter pawnable-backend exec prisma migrate deploy
+            pnpm --filter pawnable-backend seed
             pm2 startOrReload ecosystem.config.js
         env:
           APP_DIR: ${{ secrets.EC2_APP_DIR }}
