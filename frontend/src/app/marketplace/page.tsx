@@ -207,11 +207,23 @@ export default function MarketplacePage() {
               <CardTitle>{t("noLoans.title")}</CardTitle>
               <CardDescription>{t("noLoans.description")}</CardDescription>
 
-              <Link href="/create-loan">
-                <Button size="lg" tone="accent">
-                  {t("noLoans.button")}
-                </Button>
-              </Link>
+              <Button
+                size="lg"
+                tone="accent"
+                onClick={() => {
+                  if (!isConnected) {
+                    toast({
+                      title: t("toast.connectWallet"),
+                      description: t("toast.pleaseConnect"),
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  router.push("/create-loan");
+                }}
+              >
+                {t("noLoans.button")}
+              </Button>
             </EmptyState>
           </Card>
         ) : (
