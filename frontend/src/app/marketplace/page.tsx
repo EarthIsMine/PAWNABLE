@@ -319,19 +319,12 @@ export default function MarketplacePage() {
                         size="lg"
                         tone="accent"
                         fullWidth
-                        disabled={
-                          !isConnected ||
-                          (request.borrowerAddress &&
-                            user?.wallet_address &&
-                            request.borrowerAddress.toLowerCase() === user.wallet_address.toLowerCase())
-                        }
+                        disabled={!isConnected || isOwnRequest(request)}
                         onClick={() => openLendModal(request)}
                       >
                         {!isConnected
                           ? t("card.walletRequired")
-                          : request.borrowerAddress &&
-                              user?.wallet_address &&
-                              request.borrowerAddress.toLowerCase() === user.wallet_address.toLowerCase()
+                          : isOwnRequest(request)
                             ? t("card.ownRequestDisabled")
                             : t("card.lendNow")}
                       </Button>
@@ -677,3 +670,9 @@ const StepDesc = styled.div`
   font-size: 12px;
   color: var(--muted-foreground);
 `;
+  const isOwnRequest = (request: LoanRequest) =>
+    Boolean(
+      request.borrowerAddress &&
+        user?.wallet_address &&
+        request.borrowerAddress.toLowerCase() === user.wallet_address.toLowerCase(),
+    );
