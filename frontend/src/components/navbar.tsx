@@ -41,6 +41,15 @@ export function Navbar() {
 
   const handleConnect = async () => {
     try {
+      if (typeof window !== "undefined" && !window.ethereum) {
+        const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+        if (isMobile) {
+          const host = window.location.host;
+          const dappUrl = `https://metamask.app.link/dapp/${host}`;
+          window.location.href = dappUrl;
+          return;
+        }
+      }
       await connect();
       toast({ title: tWallet("connected"), description: tWallet("connected") });
     } catch (e: unknown) {
