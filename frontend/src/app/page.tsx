@@ -327,7 +327,6 @@ export default function HomePage() {
           <StatsWrap>
             <StatsGrid>
               {[
-                { value: "0.5%", label: t("stats.platformFee") },
                 { value: "P2P", label: t("stats.directMatching") },
                 { value: t("stats.flexible"), label: t("stats.yourRates") },
                 { value: t("stats.secure"), label: t("stats.smartContracts") },
