@@ -35,7 +35,7 @@ type FormErrors = {
   collaterals?: { token_address?: boolean; amount?: boolean }[];
 };
 
-const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID || "84532");
+const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID || "103");
 const CONTRACT_ADDRESS =
   process.env.NEXT_PUBLIC_LOAN_CONTRACT_ADDRESS || process.env.NEXT_PUBLIC_LOAN_CONTRACT || "";
 
@@ -119,7 +119,7 @@ export default function CreateLoanPage() {
     if (!principal) return;
 
     const usdc = allowedTokens.find((t) => t.symbol.toUpperCase() === "USDC");
-    const eth = allowedTokens.find((t) => t.symbol.toUpperCase() === "ETH");
+    const eth = allowedTokens.find((t) => t.symbol.toUpperCase() === "WLC");
 
     if (!usdc || !eth) return;
 

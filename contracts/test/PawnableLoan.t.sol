@@ -21,9 +21,10 @@ contract PawnableLoanTest is Test {
 
     address borrower = makeAddr("borrower");
     address lender = makeAddr("lender");
+    address feeCollector = makeAddr("feeCollector");
 
     function setUp() public {
-        pawn = new PawnableLoan();
+        pawn = new PawnableLoan(feeCollector);
         usdc = new TestToken("USD Coin", "USDC");
         weth = new TestToken("Wrapped ETH", "WETH");
 
@@ -250,8 +251,15 @@ contract PawnableLoanTest is Test {
         vm.prank(borrower);
         usdc.approve(address(pawn), type(uint256).max);
 
+        uint256 lenderBalBefore = usdc.balanceOf(lender);
+
         vm.prank(borrower);
         pawn.repayLoan(loanId);
+
+        // 수수료: 1050e6 * 10 / 10000 = 105000 (0.1%)
+        uint256 fee = repayAmount * 10 / 10000;
+        assertEq(usdc.balanceOf(feeCollector), fee);
+        assertEq(usdc.balanceOf(lender), lenderBalBefore + repayAmount - fee);
 
         PawnableLoan.Loan memory l = pawn.getLoan(loanId);
         assertEq(uint8(l.status), uint8(PawnableLoan.LoanStatus.REPAID));
@@ -323,6 +331,10 @@ contract PawnableLoanTest is Test {
         assertEq(uint8(pawn.getLoanRequest(requestId).status), uint8(PawnableLoan.RequestStatus.FUNDED));
         assertEq(uint8(pawn.getLoan(loanId).status), uint8(PawnableLoan.LoanStatus.REPAID));
         assertEq(weth.balanceOf(borrower), 10e18); // 담보 전부 돌아옴
+
+        // 수수료 확인
+        uint256 fee = 1050e6 * 10 / 10000;
+        assertEq(usdc.balanceOf(feeCollector), fee);
     }
 
     function test_fullLifecycle_createFundClaim() public {

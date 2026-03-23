@@ -7,6 +7,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Deploy (EC2)](https://github.com/EarthIsMine/PAWNABLE/actions/workflows/deploy-ec2.yml/badge.svg)
 
+> **WorldLand Grants Program**
+>
+> This project is supported by the [WorldLand Foundation](https://worldland.foundation) Grants Program.
+> Originally built on Base Sepolia, PAWNABLE has migrated to **WorldLand Mainnet (Chain ID: 103)** to leverage WorldLand's low-cost, high-performance EVM environment.
+
 ### 📺 Demo Video
 
 [![PAWNABLE Demo](https://img.youtube.com/vi/aqtpRVNjXto/maxresdefault.jpg)](https://youtu.be/aqtpRVNjXto)
@@ -17,7 +22,9 @@
 
 ## Overview
 
-PAWNABLE is a decentralized P2P lending platform built on Base blockchain. Borrowers create on-chain loan requests with locked collateral, and lenders fund them directly. No price oracle, no LTV liquidation — only **time-based liquidation**.
+PAWNABLE is a decentralized P2P lending platform built on **WorldLand blockchain**. Borrowers create on-chain loan requests with locked collateral, and lenders fund them directly. No price oracle, no LTV liquidation — only **time-based liquidation**.
+
+> **Migration Note**: PAWNABLE was originally developed on Base Sepolia (Chain ID: 84532) and has been migrated to WorldLand Mainnet (Chain ID: 103). The native collateral token has changed from ETH to WLC.
 
 ## Built for RobinPump.fun
 
@@ -124,7 +131,7 @@ USERS (wallet addresses)
 | Table | Description |
 |-------|-------------|
 | **USERS** | Wallet address-based user identification |
-| **TOKENS** | ERC20 tokens + native ETH, whitelist management |
+| **TOKENS** | ERC20 tokens + native WLC, whitelist management |
 | **LOAN_REQUESTS** | On-chain loan requests (OPEN / FUNDED / CANCELLED) |
 | **LOANS** | Active/completed loans (ONGOING / REPAID / CLAIMED) |
 
@@ -143,7 +150,8 @@ USERS (wallet addresses)
 - **State**: React Query
 
 ### Blockchain
-- **Network**: Base Sepolia (Chain ID: 84532)
+- **Network**: ~~Base Sepolia (Chain ID: 84532)~~ → **WorldLand Mainnet (Chain ID: 103)**
+- **Native Token**: WLC (Worldland)
 - **Contracts**: Solidity 0.8.24 (Foundry)
 - **Libraries**: OpenZeppelin (ReentrancyGuard, SafeERC20)
 
@@ -210,7 +218,7 @@ cp .env.example .env
 # Edit .env: DATABASE_URL, LOAN_CONTRACT_ADDRESS
 
 pnpm prisma:push    # Schema sync
-pnpm seed           # Seed tokens (ETH, USDC)
+pnpm seed           # Seed tokens (WLC)
 pnpm dev            # http://localhost:8080
 ```
 
@@ -219,7 +227,7 @@ pnpm dev            # http://localhost:8080
 ```bash
 cd contracts
 cp .env.example .env
-# Edit .env: PRIVATE_KEY, BASE_SEPOLIA_RPC_URL
+# Edit .env: PRIVATE_KEY, WORLDLAND_RPC_URL
 
 forge build          # Compile
 forge test           # Run tests (22 tests)
@@ -303,4 +311,4 @@ This project is licensed under the MIT License.
 
 ---
 
-**Built on Base**
+**Built on WorldLand** | Originally built on Base

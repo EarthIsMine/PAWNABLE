@@ -66,7 +66,7 @@
         },
         "collateral": {
           "title": "Crypto collateral",
-          "description": "Currently supports ETH and ERC-20 tokens as collateral. Assets are secured in smart contracts."
+          "description": "Currently supports WLC and ERC-20 tokens as collateral. Assets are secured in smart contracts."
         },
         "deadlines": {
           "title": "Fixed deadlines",
@@ -146,8 +146,8 @@
       "executeSuccessDesc": "The on-chain execution completed.",
       "executeError": "Execution failed",
       "executeErrorDesc": "Could not execute the loan.",
-      "insufficientFundsTitle": "Not enough ETH for gas",
-      "insufficientFundsDesc": "Add a small amount of ETH to cover gas fees and try again.",
+      "insufficientFundsTitle": "Not enough WLC for gas",
+      "insufficientFundsDesc": "Add a small amount of WLC to cover gas fees and try again.",
       "approving": "Approving...",
       "approvingDesc": "Approving token usage.",
       "txRejected": "Transaction cancelled",
@@ -224,10 +224,10 @@
       "createFailed": "Failed to create loan request.",
       "submitting": "Creating…",
       "creating": "Creating...",
-      "depositingEth": "Depositing ETH...",
-      "depositingEthDesc": "Depositing ETH collateral to the contract.",
-      "insufficientFundsTitle": "Not enough ETH for gas",
-      "insufficientFundsDesc": "Add a small amount of ETH to cover gas fees and try again.",
+      "depositingEth": "Depositing WLC...",
+      "depositingEthDesc": "Depositing WLC collateral to the contract.",
+      "insufficientFundsTitle": "Not enough WLC for gas",
+      "insufficientFundsDesc": "Add a small amount of WLC to cover gas fees and try again.",
       "txRejected": "Transaction cancelled",
       "txRejectedDesc": "You cancelled the transaction."
     },
@@ -468,8 +468,8 @@
       "activateError": "Failed to activate the loan",
       "repayError": "Failed to repay the loan",
       "liquidateError": "Failed to liquidate collateral",
-      "insufficientFundsTitle": "Not enough ETH for gas",
-      "insufficientFundsDesc": "Add a small amount of ETH to cover gas fees and try again."
+      "insufficientFundsTitle": "Not enough WLC for gas",
+      "insufficientFundsDesc": "Add a small amount of WLC to cover gas fees and try again."
     },
 
     "overview": "Overview",

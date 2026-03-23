@@ -17,7 +17,7 @@ function createEmotionCache() {
 export default function EmotionRegistry({ children }: { children: React.ReactNode }) {
   const [cache] = React.useState<EmotionCacheWithInserted>(() => {
     const c = createEmotionCache() as EmotionCacheWithInserted;
-
+    c.compat = true;
     c.__inserted = new Set<string>();
 
     const originalInsert = c.insert;

@@ -17,7 +17,7 @@ const LOAN_ABI = [
   "event LoanRequestCreated(uint256 indexed requestId, address indexed borrower, address collateralToken, uint256 collateralAmount, address principalToken, uint256 principalAmount, uint256 interestBps, uint256 duration)",
   "event LoanRequestCancelled(uint256 indexed requestId, address indexed borrower)",
   "event LoanFunded(uint256 indexed loanId, uint256 indexed requestId, address indexed lender, address borrower, uint256 startTimestamp, uint256 dueTimestamp)",
-  "event LoanRepaid(uint256 indexed loanId, address indexed borrower, uint256 repayAmount)",
+  "event LoanRepaid(uint256 indexed loanId, address indexed borrower, uint256 repayAmount, uint256 fee)",
   "event CollateralClaimed(uint256 indexed loanId, address indexed lender, uint256 collateralAmount)",
 ]
 

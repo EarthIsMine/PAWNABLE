@@ -67,7 +67,7 @@
         },
         "collateral": {
           "title": "加密抵押",
-          "description": "目前支援 ETH 與 ERC-20 代幣作抵押，資產由智能合約安全保管。"
+          "description": "目前支援 WLC 與 ERC-20 代幣作抵押，資產由智能合約安全保管。"
         },
         "deadlines": {
           "title": "固定期限",
@@ -147,8 +147,8 @@
       "executeSuccessDesc": "鏈上執行已完成。",
       "executeError": "執行失敗",
       "executeErrorDesc": "未能執行該貸款。",
-      "insufficientFundsTitle": "ETH 不足以支付手續費",
-      "insufficientFundsDesc": "請先補充少量 ETH 以支付 gas 後再試。",
+      "insufficientFundsTitle": "WLC 不足以支付手續費",
+      "insufficientFundsDesc": "請先補充少量 WLC 以支付 gas 後再試。",
       "approving": "核准中...",
       "approvingDesc": "正在核准代幣使用。",
       "txRejected": "交易已取消",
@@ -225,10 +225,10 @@
       "createFailed": "貸款請求建立失敗。",
       "submitting": "建立中…",
       "creating": "建立中...",
-      "depositingEth": "正在存入 ETH...",
-      "depositingEthDesc": "正將 ETH 抵押存入合約。",
-      "insufficientFundsTitle": "ETH 不足以支付手續費",
-      "insufficientFundsDesc": "請先補充少量 ETH 以支付 gas 後再試。",
+      "depositingEth": "正在存入 WLC...",
+      "depositingEthDesc": "正將 WLC 抵押存入合約。",
+      "insufficientFundsTitle": "WLC 不足以支付手續費",
+      "insufficientFundsDesc": "請先補充少量 WLC 以支付 gas 後再試。",
       "txRejected": "交易已取消",
       "txRejectedDesc": "你已取消交易。"
     },
@@ -469,8 +469,8 @@
       "activateError": "啟用貸款失敗",
       "repayError": "償還貸款失敗",
       "liquidateError": "清算抵押品失敗",
-      "insufficientFundsTitle": "ETH 不足以支付手續費",
-      "insufficientFundsDesc": "請先補充少量 ETH 以支付 gas 後再試。"
+      "insufficientFundsTitle": "WLC 不足以支付手續費",
+      "insufficientFundsDesc": "請先補充少量 WLC 以支付 gas 後再試。"
     },
 
     "overview": "概覽",

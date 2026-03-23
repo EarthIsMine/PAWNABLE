@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.worldland.foundation)",
+      "WebFetch(domain:chainlist.org)",
+      "Bash(curl:*)",
+      "Bash(forge script:*)",
+      "Bash(cast wallet address:*)",
+      "Bash(python3:*)",
+      "Bash(forge test:*)",
+      "Bash(forge build:*)",
+      "Bash(source:*)",
+      "Bash(cast send:*)",
+      "Bash(cast compute-address:*)",
+      "Bash(forge create:*)"
+    ]
+  }
+}

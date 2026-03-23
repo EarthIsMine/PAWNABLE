@@ -11,11 +11,23 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 contract PawnableLoan is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
+    constructor(address _feeRecipient) {
+        require(_feeRecipient != address(0), "Zero fee recipient");
+        feeRecipient = _feeRecipient;
+    }
+
     // ========================
     // Constants
     // ========================
 
     address public constant NATIVE_TOKEN = address(0);
+    uint256 public constant FEE_BPS = 10; // 0.1%
+
+    // ========================
+    // State (fee)
+    // ========================
+
+    address public immutable feeRecipient;
 
     // ========================
     // Types
@@ -93,7 +105,7 @@ contract PawnableLoan is ReentrancyGuard {
         uint256 dueTimestamp
     );
 
-    event LoanRepaid(uint256 indexed loanId, address indexed borrower, uint256 repayAmount);
+    event LoanRepaid(uint256 indexed loanId, address indexed borrower, uint256 repayAmount, uint256 fee);
     event CollateralClaimed(uint256 indexed loanId, address indexed lender, uint256 collateralAmount);
 
     // ========================
@@ -222,18 +234,25 @@ contract PawnableLoan is ReentrancyGuard {
 
         uint256 interest = loan.principalAmount * loan.interestBps / 10000;
         uint256 repayAmount = loan.principalAmount + interest;
+        uint256 fee = repayAmount * FEE_BPS / 10000;
+        uint256 lenderAmount = repayAmount - fee;
 
-        // 원금+이자 → lender
+        loan.status = LoanStatus.REPAID;
+
+        // 원금+이자-수수료 → lender, 수수료 → feeRecipient
         if (loan.principalToken == NATIVE_TOKEN) {
             require(msg.value >= repayAmount, "Insufficient ETH");
-            (bool success,) = loan.lender.call{value: repayAmount}("");
+            (bool success,) = loan.lender.call{value: lenderAmount}("");
             require(success, "ETH transfer failed");
+            (bool feeSuccess,) = feeRecipient.call{value: fee}("");
+            require(feeSuccess, "Fee transfer failed");
             if (msg.value > repayAmount) {
                 (bool refundSuccess,) = msg.sender.call{value: msg.value - repayAmount}("");
                 require(refundSuccess, "ETH refund failed");
             }
         } else {
-            IERC20(loan.principalToken).safeTransferFrom(msg.sender, loan.lender, repayAmount);
+            IERC20(loan.principalToken).safeTransferFrom(msg.sender, loan.lender, lenderAmount);
+            IERC20(loan.principalToken).safeTransferFrom(msg.sender, feeRecipient, fee);
         }
 
         // 담보 → borrower
@@ -244,8 +263,7 @@ contract PawnableLoan is ReentrancyGuard {
             IERC20(loan.collateralToken).safeTransfer(loan.borrower, loan.collateralAmount);
         }
 
-        loan.status = LoanStatus.REPAID;
-        emit LoanRepaid(loanId, loan.borrower, repayAmount);
+        emit LoanRepaid(loanId, loan.borrower, repayAmount, fee);
     }
 
     // ========================
