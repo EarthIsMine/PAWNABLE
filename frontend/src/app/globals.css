@@ -1,8 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Pretendard (install: pnpm add pretendard) */
-@import "pretendard/dist/web/static/pretendard.css";
 
 /* Tailwind v4: dark variant helper */
 @custom-variant dark (&:is(.dark *));
@@ -196,7 +194,7 @@ h3 {
   --breakpoint-2xl: 96rem; /* 1536px */
 
   /* Fonts */
-  --font-sans: "Pretendard", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Arial,
+  --font-sans: var(--font-pretendard), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Arial,
     "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 

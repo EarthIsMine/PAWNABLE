@@ -2,8 +2,15 @@ import type React from "react";
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
+import localFont from "next/font/local";
 
 import "./globals.css";
+
+const pretendard = localFont({
+  src: "../../node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2",
+  variable: "--font-pretendard",
+  display: "swap",
+});
 import EmotionRegistry from "@/lib/emotion/EmotionRegistry";
 import Providers from "./providers";
 import { AuthProvider } from "@/contexts/auth-context";
@@ -22,7 +29,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const messages = await getMessages();
 
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning className={pretendard.variable}>
       <body className="min-h-dvh">
         <EmotionRegistry>
           <NextIntlClientProvider locale={locale} messages={messages}>

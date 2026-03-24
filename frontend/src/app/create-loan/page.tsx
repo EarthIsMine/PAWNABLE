@@ -118,7 +118,7 @@ export default function CreateLoanPage() {
     const principal = allowedTokens.find((t) => t.address === principalTokenAddress);
     if (!principal) return;
 
-    const usdc = allowedTokens.find((t) => t.symbol.toUpperCase() === "USDC");
+    const usdc = allowedTokens.find((t) => t.symbol.toUpperCase() === "USDT");
     const eth = allowedTokens.find((t) => t.symbol.toUpperCase() === "WLC");
 
     if (!usdc || !eth) return;

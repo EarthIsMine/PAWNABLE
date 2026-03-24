@@ -1,0 +1,44 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: pawnable
+      POSTGRES_PASSWORD: dlghwo1988!
+      POSTGRES_DB: pawnable
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8085:8085"
+    environment:
+      DATABASE_URL: postgresql://pawnable:dlghwo1988!@db:5432/pawnable?schema=public
+      PORT: 8085
+      NODE_ENV: production
+      BASE_CHAIN_ID: 103
+      BASE_RPC_URL: https://seoul.worldland.foundation
+      LOAN_CONTRACT_ADDRESS: 0x603010Bba307831Fa3B7dD05974511850Bcdc1c7
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://pawnable.site/api
+    ports:
+      - "3005:3005"
+    environment:
+      NEXT_PUBLIC_API_URL: https://pawnable.site/api
+    depends_on:
+      - backend
+
+
+volumes:
+  postgres_data:

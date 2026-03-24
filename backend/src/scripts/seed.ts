@@ -22,11 +22,30 @@ async function seed() {
       isNative: true,
       isAllowed: true,
     },
-    update: {},
+    update: { symbol: 'WLC', decimals: 18, isNative: true, isAllowed: true },
+  });
+
+  // Add USDT (WorldLand)
+  await prisma.token.upsert({
+    where: {
+      chainId_address: {
+        chainId: env.BASE_CHAIN_ID,
+        address: '0x4046bd9ec8223c2a9354dc517b2d2d67b75cebfb',
+      },
+    },
+    create: {
+      chainId: env.BASE_CHAIN_ID,
+      address: '0x4046bd9ec8223c2a9354dc517b2d2d67b75cebfb',
+      symbol: 'USDT',
+      decimals: 6,
+      isNative: false,
+      isAllowed: true,
+    },
+    update: { symbol: 'USDT', decimals: 6, isNative: false, isAllowed: true },
   });
 
   console.log('✅ Seeding complete!');
-  console.log('Added 1 token (WLC)');
+  console.log('Added 2 tokens (WLC, USDT)');
 }
 
 seed()
