@@ -15,7 +15,9 @@ COPY backend/prisma.config.ts ./backend/prisma.config.ts
 COPY backend/prisma/schema.prisma ./backend/prisma/schema.prisma
 RUN pnpm install --frozen-lockfile --filter @pawnable/backend...
 COPY backend ./backend
-RUN pnpm --filter @pawnable/backend build && pnpm prune --prod
+RUN pnpm --filter @pawnable/backend build \
+  && pnpm prune --prod \
+  && pnpm install --prod --frozen-lockfile --filter @pawnable/backend...
 
 FROM base AS runner
 ENV NODE_ENV=production
