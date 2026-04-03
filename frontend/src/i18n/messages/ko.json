@@ -427,7 +427,8 @@
       "repay": "대출 상환",
       "liquidate": "담보 청산",
       "cancel": "대출 취소",
-      "repaying": "상환 중..."
+      "repaying": "상환 중...",
+      "liquidating": "청산 중..."
     },
 
     "hint": {

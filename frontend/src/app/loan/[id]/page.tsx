@@ -93,6 +93,7 @@ export default function LoanDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isRepaying, setIsRepaying] = useState(false);
+  const [isLiquidating, setIsLiquidating] = useState(false);
 
   const loanId = params?.id;
 
@@ -158,6 +159,7 @@ export default function LoanDetailPage() {
         createdAt: loan.startTimestamp,
         dueAt: loan.dueTimestamp,
         borrowerAddress: loan.borrower?.address ?? "",
+        lenderAddress: loan.lender?.address ?? "",
       };
     }
 
@@ -184,6 +186,7 @@ export default function LoanDetailPage() {
       dueAt: null as string | null,
       durationDays,
       borrowerAddress: request.borrowerAddress,
+      lenderAddress: request.loan?.lender?.address ?? "",
       onchainRequestId: request.onchainRequestId,
     };
   }, [detail]);
@@ -191,6 +194,10 @@ export default function LoanDetailPage() {
   const isBorrower =
     Boolean(user?.wallet_address) &&
     viewModel?.borrowerAddress?.toLowerCase() === user?.wallet_address?.toLowerCase();
+
+  const isLender =
+    Boolean(user?.wallet_address) &&
+    viewModel?.lenderAddress?.toLowerCase() === user?.wallet_address?.toLowerCase();
 
   const canCancelRequest =
     viewModel?.kind === "request" &&
@@ -202,6 +209,16 @@ export default function LoanDetailPage() {
     Boolean(viewModel?.onchainLoanId) &&
     Boolean(viewModel?.principalTokenAddress) &&
     isBorrower &&
+    !viewModel?.isOverdue &&
+    ((viewModel?.kind === "loan" && viewModel.status === "ONGOING") ||
+      (viewModel?.kind === "request" &&
+        viewModel.status === "FUNDED" &&
+        viewModel.loanStatus === "ONGOING"));
+
+  const canLiquidateLoan =
+    Boolean(viewModel?.onchainLoanId) &&
+    isLender &&
+    Boolean(viewModel?.isOverdue) &&
     ((viewModel?.kind === "loan" && viewModel.status === "ONGOING") ||
       (viewModel?.kind === "request" &&
         viewModel.status === "FUNDED" &&
@@ -310,6 +327,52 @@ export default function LoanDetailPage() {
       });
     } finally {
       setIsRepaying(false);
+    }
+  };
+
+  const handleLiquidateLoan = async () => {
+    if (!viewModel?.onchainLoanId) return;
+
+    try {
+      setIsLiquidating(true);
+
+      const result = await contractService.claimCollateral(viewModel.onchainLoanId);
+
+      if (viewModel.loanDbId) {
+        await loanAPI.updateStatus(viewModel.loanDbId, "CLAIMED", result.hash);
+      }
+
+      toast({
+        title: tc("success"),
+        description: t("toast.liquidateSuccess", { hash: result.hash }),
+      });
+
+      if (detail) {
+        await loadData(detail.data.id);
+      }
+    } catch (err: unknown) {
+      const error = err as any;
+      const code = error?.code ?? error?.info?.error?.code;
+      const isUserRejected =
+        code === 4001 ||
+        code === "ACTION_REJECTED" ||
+        /user denied|rejected|ACTION_REJECTED/i.test(error?.message || "");
+
+      if (isUserRejected) {
+        toast({
+          title: tc("error"),
+          description: t("toast.txRejected", { defaultMessage: "Transaction rejected" }),
+        });
+        return;
+      }
+
+      toast({
+        title: tc("error"),
+        description: error instanceof Error ? error.message : t("toast.liquidateError"),
+        variant: "destructive",
+      });
+    } finally {
+      setIsLiquidating(false);
     }
   };
 
@@ -508,6 +571,17 @@ export default function LoanDetailPage() {
                   {canRepayLoan && (
                     <Button onClick={handleRepayLoan} disabled={isRepaying}>
                       {isRepaying ? t("action.repaying", { defaultMessage: "Repaying..." }) : t("action.repay")}
+                    </Button>
+                  )}
+                  {canLiquidateLoan && (
+                    <Button
+                      variant="destructive"
+                      onClick={handleLiquidateLoan}
+                      disabled={isLiquidating}
+                    >
+                      {isLiquidating
+                        ? t("action.liquidating", { defaultMessage: "Liquidating..." })
+                        : t("action.liquidate")}
                     </Button>
                   )}
                   <HintBox>

@@ -427,7 +427,8 @@
       "repay": "Repay loan",
       "liquidate": "Liquidate collateral",
       "cancel": "Cancel loan",
-      "repaying": "Repaying..."
+      "repaying": "Repaying...",
+      "liquidating": "Liquidating..."
     },
 
     "hint": {

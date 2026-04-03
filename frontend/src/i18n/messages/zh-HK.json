@@ -428,7 +428,8 @@
       "repay": "償還貸款",
       "liquidate": "清算抵押品",
       "cancel": "取消貸款",
-      "repaying": "償還中..."
+      "repaying": "償還中...",
+      "liquidating": "清算中..."
     },
 
     "hint": {
