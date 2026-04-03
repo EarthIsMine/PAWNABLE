@@ -1,0 +1,116 @@
+name: Deploy (Mac mini)
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-macmini-main
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  FRONTEND_IMAGE: ghcr.io/earthismine/pawnable-frontend
+  BACKEND_IMAGE: ghcr.io/earthismine/pawnable-backend
+  NEXT_PUBLIC_API_URL: https://pawnable.site/api
+  APP_DIR: /Users/Shared/srv/PAWNABLE
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:latest
+            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: frontend/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ env.NEXT_PUBLIC_API_URL }}
+          tags: |
+            ${{ env.FRONTEND_IMAGE }}:latest
+            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: appleboy/ssh-action@v1.0.3
+        env:
+          APP_DIR: ${{ env.APP_DIR }}
+          IMAGE_TAG: ${{ github.sha }}
+          FRONTEND_IMAGE: ${{ env.FRONTEND_IMAGE }}
+          BACKEND_IMAGE: ${{ env.BACKEND_IMAGE }}
+          POSTGRES_USER: pawnable
+          POSTGRES_PASSWORD: ${{ secrets.MACMINI_POSTGRES_PASSWORD }}
+          POSTGRES_DB: pawnable
+          DATABASE_URL: postgresql://pawnable:${{ secrets.MACMINI_POSTGRES_PASSWORD }}@db:5432/pawnable?schema=public
+          BASE_CHAIN_ID: "103"
+          BASE_RPC_URL: https://seoul.worldland.foundation
+          LOAN_CONTRACT_ADDRESS: 0x603010Bba307831Fa3B7dD05974511850Bcdc1c7
+          NEXT_PUBLIC_API_URL: ${{ env.NEXT_PUBLIC_API_URL }}
+        with:
+          host: pelicanlab.dev
+          username: yt4307
+          key: ${{ secrets.MACMINI_SSH_KEY }}
+          envs: APP_DIR,IMAGE_TAG,FRONTEND_IMAGE,BACKEND_IMAGE,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,DATABASE_URL,BASE_CHAIN_ID,BASE_RPC_URL,LOAN_CONTRACT_ADDRESS,NEXT_PUBLIC_API_URL
+          script: |
+            set -eu
+
+            cd "$APP_DIR"
+            git fetch --all
+            git reset --hard origin/main
+
+            cat > .env.prod <<EOF
+            FRONTEND_IMAGE=${FRONTEND_IMAGE}:${IMAGE_TAG}
+            BACKEND_IMAGE=${BACKEND_IMAGE}:${IMAGE_TAG}
+            POSTGRES_USER=${POSTGRES_USER}
+            POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+            POSTGRES_DB=${POSTGRES_DB}
+            DATABASE_URL=${DATABASE_URL}
+            BASE_CHAIN_ID=${BASE_CHAIN_ID}
+            BASE_RPC_URL=${BASE_RPC_URL}
+            LOAN_CONTRACT_ADDRESS=${LOAN_CONTRACT_ADDRESS}
+            NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+            EOF
+
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d db
+            docker compose -f docker-compose.prod.yml run --rm backend pnpm run migrate:deploy
+
+            if [ ! -f .seeded ]; then
+              docker compose -f docker-compose.prod.yml run --rm backend pnpm run seed
+              touch .seeded
+            fi
+
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans backend frontend
+            docker image prune -f

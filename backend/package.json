@@ -1,5 +1,5 @@
 {
-  "name": "pawnable-backend",
+  "name": "@pawnable/backend",
   "version": "1.0.0",
   "description": "PAWNABLE P2P Lending Backend",
   "type": "module",
@@ -8,9 +8,11 @@
     "dev": "tsx watch src/index.ts",
     "build": "prisma generate && tsc",
     "start": "node dist/index.js",
-    "seed": "tsx src/scripts/seed.ts",
+    "seed": "node dist/scripts/seed.js",
+    "seed:dev": "tsx src/scripts/seed.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "migrate:deploy": "node ../node_modules/.pnpm/node_modules/prisma/build/index.js migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:push": "prisma db push"
   },
@@ -23,13 +25,13 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "ethers": "^6.9.0",
+    "prisma": "^6.2.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/cors": "^2.8.17",
     "@types/node": "^20.10.0",
-    "prisma": "^6.2.0",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   }

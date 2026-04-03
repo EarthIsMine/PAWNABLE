@@ -1,11 +1,7 @@
 {
-  "name": "@pawnable/frontend",
+  "name": "pawnable",
   "private": true,
   "packageManager": "pnpm@10.26.2",
-  "workspaces": [
-    "frontend",
-    "backend"
-  ],
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "dev:frontend": "pnpm --filter @pawnable/frontend dev",
