@@ -5,7 +5,7 @@
 > Collateral is locked on-chain, and liquidation is determined purely by time.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-![Deploy (EC2)](https://github.com/EarthIsMine/PAWNABLE/actions/workflows/deploy-ec2.yml/badge.svg)
+![Deploy (Mac mini)](https://github.com/EarthIsMine/PAWNABLE/actions/workflows/deploy-macmini.yml/badge.svg)
 
 > **WorldLand Grants Program**
 >
@@ -197,16 +197,16 @@ PAWNABLE/
 
 ### Prerequisites
 
-- Node.js 18+
-- pnpm
+- Node.js 24+
+- pnpm 10.26.2
 - PostgreSQL 16+
 - Foundry (for contracts)
 
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/yourusername/pawnable.git
-cd pawnable
+git clone https://github.com/EarthIsMine/PAWNABLE.git
+cd PAWNABLE
 pnpm install
 ```
 
@@ -242,6 +242,39 @@ cp .env.example .env
 
 pnpm dev             # http://localhost:3000
 ```
+
+---
+
+## CI/CD Deployment
+
+Production deployment runs through GitHub Actions and Docker images.
+
+### Workflow
+
+- `.github/workflows/deploy-macmini.yml` builds `backend` and `frontend` Docker images for `linux/amd64` and `linux/arm64` with Buildx.
+- Images are pushed to GHCR:
+  - `ghcr.io/earthismine/pawnable-backend`
+  - `ghcr.io/earthismine/pawnable-frontend`
+- The workflow SSHes into the Mac mini and runs `docker-compose -f docker-compose.prod.yml pull && up`.
+- PostgreSQL runs as a container in the same production compose stack.
+- Prisma migration runs on every deployment.
+- Seed runs only once, guarded by a `.seeded` marker file in `/Users/Shared/srv/PAWNABLE`.
+
+### Required GitHub Secrets
+
+| Secret | Description |
+|--------|-------------|
+| `MACMINI_SSH_KEY` | Private key for SSH access to `hoserver@pelicanlab.dev` |
+| `MACMINI_POSTGRES_PASSWORD` | Initial PostgreSQL password used when the DB volume is first created |
+
+### Mac mini Prerequisites
+
+- Repository cloned at `/Users/Shared/srv/PAWNABLE`
+- Docker Desktop available from the `hoserver` account
+- `docker-compose` available in a non-interactive SSH shell
+- GHCR packages set to Public, or Docker logged in to GHCR if private
+
+> The deployment script runs `git fetch --all` and `git reset --hard origin/main`, so do not edit source files directly on the server.
 
 ---
 
