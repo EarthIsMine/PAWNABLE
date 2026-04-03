@@ -75,8 +75,8 @@ jobs:
           POSTGRES_DB: pawnable
           DATABASE_URL: postgresql://pawnable:${{ secrets.MACMINI_POSTGRES_PASSWORD }}@db:5432/pawnable?schema=public
           BASE_CHAIN_ID: "103"
-          BASE_RPC_URL: https://seoul.worldland.foundation
-          LOAN_CONTRACT_ADDRESS: 0x603010Bba307831Fa3B7dD05974511850Bcdc1c7
+          BASE_RPC_URL: "https://seoul.worldland.foundation"
+          LOAN_CONTRACT_ADDRESS: "0x603010Bba307831Fa3B7dD05974511850Bcdc1c7"
           NEXT_PUBLIC_API_URL: ${{ env.NEXT_PUBLIC_API_URL }}
         with:
           host: pelicanlab.dev
