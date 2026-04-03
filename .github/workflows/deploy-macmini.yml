@@ -80,7 +80,7 @@ jobs:
           NEXT_PUBLIC_API_URL: ${{ env.NEXT_PUBLIC_API_URL }}
         with:
           host: pelicanlab.dev
-          username: yt4307
+          username: hoserver
           key: ${{ secrets.MACMINI_SSH_KEY }}
           envs: APP_DIR,IMAGE_TAG,FRONTEND_IMAGE,BACKEND_IMAGE,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,DATABASE_URL,BASE_CHAIN_ID,BASE_RPC_URL,LOAN_CONTRACT_ADDRESS,NEXT_PUBLIC_API_URL
           script: |
