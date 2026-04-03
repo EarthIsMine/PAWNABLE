@@ -103,14 +103,14 @@ jobs:
             NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
             EOF
 
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d db
-            docker compose -f docker-compose.prod.yml run --rm backend pnpm run migrate:deploy
+            docker-compose -f docker-compose.prod.yml pull
+            docker-compose -f docker-compose.prod.yml up -d db
+            docker-compose -f docker-compose.prod.yml run --rm backend pnpm run migrate:deploy
 
             if [ ! -f .seeded ]; then
-              docker compose -f docker-compose.prod.yml run --rm backend pnpm run seed
+              docker-compose -f docker-compose.prod.yml run --rm backend pnpm run seed
               touch .seeded
             fi
 
-            docker compose -f docker-compose.prod.yml up -d --remove-orphans backend frontend
+            docker-compose -f docker-compose.prod.yml up -d --remove-orphans backend frontend
             docker image prune -f
